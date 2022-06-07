@@ -1,0 +1,1 @@
+This is an implementation of an secd machine that interprets Haskell by David <Freudi> and David Seka. It is a project for the course "Abstrakte Maschinen" that was held at Tuwien in the summer semester of 2022.
