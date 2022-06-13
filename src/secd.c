@@ -1,8 +1,38 @@
+/*
+*   Description of the instructions
+*
+*    NIL                s e (NIL.c) d           ->      (NIL.s) e c d
+*    LDC                s e (LDC a.c) d         ->      (a.s) e c d
+*    LD                 s e (LD (i.j).c) d      ->      (locate((i.j),e).s) e c d       locate(i,j) means to find the value in the ith list, with index j in e.
+*    ATOM               (a.s) e (OP.c) d        ->      ((OP a).s) e c d              (OP a) means that the result of atom(a) will be pushed on the stack. 
+*    CAR                (a.s) e (OP.c) d        ->      ((OP a).s) e c d
+*    CDR                (a.s) e (OP.c) d        ->      ((OP a).s) e c d
+*    CONS               (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d            (a OP b) means that the result of cons(a,b) will be pushed on the stack
+*    ADD                (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d
+*    SUB                (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d
+*    EQ                 (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d
+*    LEQ                (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d
+*    LE                 (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d
+*    GEQ                (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d
+*    GE                 (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d
+*    MUL                (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d
+*    DIV                (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d  
+*    SEL                (x.s) e (SEL T F.c) d   ->      s e c? (c.d)                   SEL takes the last value on the stack, if 0 F will be execute, else T.
+*    JOIN               s e (JOIN.c) (r.d)      ->      s e r d                        the car of dump should contain the control register contents after the select
+*    LDF                s e (LDF f.c) d         ->      ((f.e).s) e c d                pushes a cons cell with the function and current enviroment on the stack
+*    AP                 ((f.e')v.s) e (AP.c) d  ->      NIL (v.e') f (s e c.d)         applys the function from the stack. by loading the function into control, and setting the enviroment.
+*    RTN                (x.z)e'(RTN.q)(s e c.d) ->      (x.s) e c d                    keeps the result of the function on the stack and returns to the main program flow
+*    DUM                s e (DUM.c) d           ->      s (NIL.e) c d                  adds a dummy variable to the enviroment
+*    RAP                ((f.(NIL.e)) v.s) (NIL.e) (RAP.c) d)
+*                                               ->      NIL (rplaca((NIL.e),v).e) f (s e c.d)   havent fully understood the meaning yet. rplaca means replace car
+*    STOP               s e (STOP.c) e          ->      s e (STOP.c) d                  stop the machine
+*
+*/
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include "secd.h"
-
 
 void run(struct sesecd *secd){
 
