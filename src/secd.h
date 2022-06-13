@@ -34,12 +34,14 @@ typedef enum {
 
 // Nested list that can contain tree structured data. car is the head and cdr the tail. 
 // (contents of the address part of the register, contents of the decrement part of the register)
+// value wil normally be interpreted as a number, but after instructions that produce a true or false value, 0 will be false and 1 true.
 typedef struct sexpr {
   
   struct sexpr *cdr;
   union car {
     struct sexpr *list;
     int value;
+    enum instruction instruction;
   }
 } sexpr;
 
@@ -55,7 +57,7 @@ typedef struct sesecd {
 // execute the programm. should read from the c s-expression and manipulate the secd state accordingly. 
 void run(struct sesecd *secd);
 // constructs memory objects that can hold integer values or pointers to s-expr. When assiging integer value to cdr it will still be a pointer to an s-expr
-// containing an integer value in its car. 
+// containing an integer value in its car. L=List, I= Integer. 
 struct sexpr consLL(struct sexpr *car, struct sexpr *cdr);
 struct sexpr consIL(int car, struct sexpr *cdr);
 struct sexpr consLI(struct sexpr *car, int cdr);
