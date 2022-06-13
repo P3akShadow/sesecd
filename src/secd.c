@@ -61,12 +61,26 @@ switch(secd->c->car.instruction) {
         divInstruction(*secd);
         break;
     case SEL:
+        selInstruction(*secd);
+        break;
     case JOIN:
+        joinInstruction(*secd);
+        break;
     case LDF:
+        ldfInstruction(*secd);
+        break;
     case AP:
+        apInstruction(*secd);
+        break;
     case RTN:
+        rtnInstruction(*secd);
+        break;
     case DUM:
+        dumInstruction(*secd);
+        break;
     case RAP:
+        rapInstruction(*secd);
+        break;
     case STOP:
         stopInstruction(*secd);
         break;
@@ -103,6 +117,7 @@ struct sexpr consII(int *car, int *cdr){
     cons->cdr = *consCDR;
     return cons;
 }
+
 
 void nilInstruction(struct sesecd *secd){
     struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
@@ -205,15 +220,7 @@ void leqInstruction(struct sesecd *secd){
     secd->s = consIL(result, secd->s->cdr->cdr);
     secd->c = secd->c->cdr;
 }
-
-void leInstruction(struct sesecd *secd){
-
-    int result = 0;
-    if (secd->s->car.value < secd->s->cdr->car.value) result = 1;
     secd->s = consIL(result, secd->s->cdr->cdr);
-    secd->c = secd->c->cdr;
-}
-
 void geqInstruction(struct sesecd *secd){
 
     int result = 0;
@@ -244,7 +251,76 @@ void divInstruction(struct sesecd *secd){
     secd->c = secd->c->cdr;
 }
 
+void selInstruction(struct sesecd *secd){
 
+    secd->d = consLL(secd->c->cdr->cdr->cdr, secd->d);
+    if(secd->s->car.value != 0){
+        secd->c = secd->c->cdr->car.list;
+    } else secd->c = secd->c->cdr->cdr->car.list;
+
+    secd->s = secd->s->cdr;
+}
+
+void joinInstruction(struct sesecd *secd){
+
+    secd->c = secd->d->car.list;
+    secd->d = secd->d->cdr;
+}
+
+void ldfInstruction(struct sesecd *secd){
+    struct sexpr functionEnviroment;
+    functionEnviroment = consLL(secd->c->cdr->car.list, secd->e);
+    secd->s = consLL(functionEnviroment, secd->s);
+    secd->c = secd->cdr->cdr;
+}
+
+void apInstruction(struct sesecd *secd){
+
+    struct sexpr controlDump;
+    struct sexpr envControlDump;
+    controlDump = consLL(secd->c->cdr, secd->d);
+    envControlDump = consLL(secd->e, controlDump);
+    secd->d = consLL(secd->s->cdr->cdr, envControlDump);
+    secd->e = consLL(secd->s->cdr->car.list, secd->s->car.list->cdr);
+    
+    struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
+    nil->car.instruction = NIL;
+    secd->s = consLL(nil, NULL);
+}
+
+void rtnInstruction(struct sesecd *secd){
+
+    if(secd->s->car.list = NULL) {
+            secd->s = consIL(secd->s->car.value, secd->d->car.list);
+    } else  secd->s = consLL(secd->s->car.list, secd->d->car.list);
+
+    secd->e = secd->d->cdr->car.list;
+    secd->c = secd->d->cdr->cdr->car.list;
+    secd->d = secd->d->cdr->cdr->cdr;
+}
+
+void dumInstruction(struct sesecd *secd){
+
+    struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
+    nil->car.instruction = NIL;
+    secd->e = consLL(nil, secd->e);
+    secd->c = secd->c->cdr;
+}
+
+void rapInstruction(struct sesecd *secd){
+    
+    struct sexpr controlDump;
+    struct sexpr envControlDump;
+    controlDump = consLL(secd->c->cdr, secd->d);
+    envControlDump = consLL(secd->e, controlDump);
+    secd->d = consLL(secd->s->cdr->cdr, envControlDump);
+    secd->e = consLL(secd->s->car.list->cdr, secd->s->cdr->car.list);
+    secd->c = secd->s->car.list->car.list;
+    
+    struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
+    nil->car.instruction = NIL;
+    secd->s = consLL(nil, NULL);
+}
 
 void stopInstruction(struct sesecd *secd) {
     printf("Result: %d", secd->s->car.value);
