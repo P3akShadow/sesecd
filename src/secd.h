@@ -19,8 +19,6 @@ typedef enum {
     GE,
     MUL,
     DIV,
-    AND,
-    OR,
     SEL,
     JOIN,
     LDF,
@@ -34,7 +32,7 @@ typedef enum {
 
 // Nested list that can contain tree structured data. car is the head and cdr the tail. 
 // (contents of the address part of the register, contents of the decrement part of the register)
-// value wil normally be interpreted as a number, but after instructions that produce a true or false value, 0 will be false and 1 true.
+// value wil normally be interpreted as a number, but after instructions that produce a true or false value, 0 will be false and ever other integer true.
 typedef struct sexpr {
   
   struct sexpr *cdr;
