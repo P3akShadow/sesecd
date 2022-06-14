@@ -61,30 +61,21 @@ struct sexpr *consIL(int car, struct sexpr *cdr);
 struct sexpr *consLI(struct sexpr *car, int cdr);
 struct sexpr *consII(int car, int cdr);
 
-void nilInstruction(struct sesecd *secd);
-void ldcInstruction(struct sesecd *secd);
-void ldInstruction(struct sesecd *secd);
-void atomInstruction(struct sesecd *secd);
-void carInstruction(struct sesecd *secd);
-void cdrInstruction(struct sesecd *secd);
-void consInstruction(struct sesecd *secd);
-void addInstruction(struct sesecd *secd);
-void subInstruction(struct sesecd *secd);
-void eqInstruction(struct sesecd *secd);
-void leqInstruction(struct sesecd *secd);
-void leInstruction(struct sesecd *secd);
-void geqInstruction(struct sesecd *secd);
-void geInstruction(struct sesecd *secd);
-void mulInstruction(struct sesecd *secd);
-void divInstruction(struct sesecd *secd);
-void selInstruction(struct sesecd *secd);
-void joinInstruction(struct sesecd *secd);
-void ldfInstruction(struct sesecd *secd);
-void apInstruction(struct sesecd *secd);
-void rtnInstruction(struct sesecd *secd);
-void dumInstruction(struct sesecd *secd);
-void rapInstruction(struct sesecd *secd);
-void stopInstruction(struct sesecd *secd);
 
+
+
+/*
+*   The following methods are here to make the creation of s-expressions in secd syntax easier
+*   Generally it will return a pointer to the current cdr, to make appending the list easier. The idea is to build an s-expression from the AST-Tree
+*/
+
+// creates a new node in CDR and puts the cadr s-expression into the car of cdr. might be useful for loading functions, returns pointer to new CDR
+struct sexpr *addCDRList(struct sexpr *car, struct sexpr *cadr);
+// creates new node in CDR with given instruction in its CAR, returns pointer to new CDR
+struct sexpr *addInstructions(struct sexpr *car, enum instruction);
+// creates new node in CDR with the int value in its CAR, returns pointer to new CDR
+struct sexpr *addValue(struct sexpr *car, int value);
+// returns new S expr with NIL instruction
+struct sexpr *createSexpr();
 
 #endif

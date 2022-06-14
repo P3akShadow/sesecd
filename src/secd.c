@@ -34,6 +34,31 @@
 #include <stdio.h>
 #include "secd.h"
 
+void nilInstruction(struct sesecd *secd);
+void ldcInstruction(struct sesecd *secd);
+void ldInstruction(struct sesecd *secd);
+void atomInstruction(struct sesecd *secd);
+void carInstruction(struct sesecd *secd);
+void cdrInstruction(struct sesecd *secd);
+void consInstruction(struct sesecd *secd);
+void addInstruction(struct sesecd *secd);
+void subInstruction(struct sesecd *secd);
+void eqInstruction(struct sesecd *secd);
+void leqInstruction(struct sesecd *secd);
+void leInstruction(struct sesecd *secd);
+void geqInstruction(struct sesecd *secd);
+void geInstruction(struct sesecd *secd);
+void mulInstruction(struct sesecd *secd);
+void divInstruction(struct sesecd *secd);
+void selInstruction(struct sesecd *secd);
+void joinInstruction(struct sesecd *secd);
+void ldfInstruction(struct sesecd *secd);
+void apInstruction(struct sesecd *secd);
+void rtnInstruction(struct sesecd *secd);
+void dumInstruction(struct sesecd *secd);
+void rapInstruction(struct sesecd *secd);
+void stopInstruction(struct sesecd *secd);
+
 void execute(struct sesecd *secd){
 
 if(secd->c->car.instruction == 0) {
@@ -365,5 +390,34 @@ void rapInstruction(struct sesecd *secd){
 void stopInstruction(struct sesecd *secd) {
     printf("Result: %d", secd->s->car.value);
     exit(0);
+}
+
+
+
+struct sexpr *addCDRList(struct sexpr *car, struct sexpr *cadr){
+    struct sexpr *cdr = (struct sexpr*) malloc(sizeof(struct sexpr));
+    car->cdr = cdr;
+    cdr->car.list = cadr;
+    return cdr;
+}
+
+struct sexpr *addInstructions(struct sexpr *car, enum instruction instruction){
+    struct sexpr *cdr = (struct sexpr*) malloc(sizeof(struct sexpr));
+    car->cdr = cdr;
+    cdr->car.instruction = instruction;
+    return cdr;
+}
+
+struct sexpr *addValue(struct sexpr *car, int value){
+    struct sexpr *cdr = (struct sexpr*) malloc(sizeof(struct sexpr));
+    car->cdr = cdr;
+    cdr->car.value = value;
+    return cdr;
+}
+
+struct sexpr *createSexpr(){
+    struct sexpr *car = (struct sexpr*) malloc(sizeof(struct sexpr));
+    car->car.instruction = NIL;
+    return car;
 }
 
