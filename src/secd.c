@@ -17,6 +17,8 @@
 *    GE                 (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d
 *    MUL                (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d
 *    DIV                (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d  
+*    AND                (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d  
+*    OR                 (a b.s) e (OP.c) d      ->      ((a OP b).s) e c d  
 *    SEL                (x.s) e (SEL T F.c) d   ->      s e c? (c.d)                   SEL takes the last value on the stack, if 0 F will be execute, else T.
 *    JOIN               s e (JOIN.c) (r.d)      ->      s e r d                        the car of dump should contain the control register contents after the select
 *    LDF                s e (LDF f.c) d         ->      ((f.e).s) e c d                pushes a cons cell with the function and current enviroment on the stack
@@ -50,6 +52,8 @@ void geqInstruction(struct sesecd *secd);
 void geInstruction(struct sesecd *secd);
 void mulInstruction(struct sesecd *secd);
 void divInstruction(struct sesecd *secd);
+void andInstruction(struct sesecd *secd);
+void orInstruction(struct sesecd *secd);
 void selInstruction(struct sesecd *secd);
 void joinInstruction(struct sesecd *secd);
 void ldfInstruction(struct sesecd *secd);
@@ -115,6 +119,12 @@ switch(secd->c->car.instruction) {
         break;
     case DIV:
         divInstruction(secd);
+        break;
+    case AND:
+        andInstruction(secd);
+        break;
+    case OR:
+        orInstruction(secd);
         break;
     case SEL:
         selInstruction(secd);
@@ -312,6 +322,22 @@ void mulInstruction(struct sesecd *secd){
 void divInstruction(struct sesecd *secd){
 
     int result = secd->s->car.value / secd->s->cdr->car.value;
+    secd->s = consIL(result, secd->s->cdr->cdr);
+    secd->c = secd->c->cdr;
+}
+
+void andInstruction(struct sesecd *secd){
+    
+    int result = 0;
+    if (secd->s->car.value != 0 && secd->s->cdr->car.value != 0) result = 1;
+    secd->s = consIL(result, secd->s->cdr->cdr);
+    secd->c = secd->c->cdr;
+}
+
+void orInstruction(struct sesecd *secd){
+
+    int result = 0;
+    if (secd->s->car.value != 0 || secd->s->cdr->car.value != 0) result = 1;
     secd->s = consIL(result, secd->s->cdr->cdr);
     secd->c = secd->c->cdr;
 }

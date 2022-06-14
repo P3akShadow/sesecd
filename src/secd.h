@@ -19,6 +19,8 @@ typedef enum instruction{
     GE,
     MUL,
     DIV,
+    AND,
+    OR,
     SEL,
     JOIN,
     LDF,
