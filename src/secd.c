@@ -414,7 +414,7 @@ void rapInstruction(struct sesecd *secd){
 }
 
 void stopInstruction(struct sesecd *secd) {
-    printf("Result: %d", secd->s->car.value);
+    printf("Result: %d\n", secd->s->car.value);
     exit(0);
 }
 
@@ -447,3 +447,13 @@ struct sexpr *createSexpr(){
     return car;
 }
 
+
+void printSexpr(sexpr* car){
+    if(car == NULL) {
+        printf("NULL");
+        return;
+    }
+    printf("{car:%d, cdr:", car->car);
+    printSexpr(car->cdr);
+    printf("}");
+}

@@ -1,2 +1,5 @@
 .o
 ssecd
+
+*.yy.*
+*.tab.*
