@@ -14,40 +14,43 @@
 %token <id> ID_TOK
 %token <number> NUM_TOK
 
-%token DEFINITION_TOK ADD_TOK SUB_TOK EQ_TOK LEQ_TOK LE_TOK GEQ_TOK GE_TOK MUL_TOK DIV_TOK AND_TOK OR_TOK PAROPEN_TOK PARCLOSE_TOK LISTOPEN_TOK LISTCLOSE_TOK
+%token MAIN_TOK DEFINITION_TOK ADD_TOK SUB_TOK EQ_TOK LEQ_TOK LE_TOK GEQ_TOK GE_TOK MUL_TOK DIV_TOK AND_TOK OR_TOK PAROPEN_TOK PARCLOSE_TOK LISTOPEN_TOK LISTCLOSE_TOK
 
 %left ADD_TOK
 
 %{
-    typedef struct exprStore{
-        sexpr* start;
-        sexpr* end;
-    } exprStore;
-
+    sexpr* mainFun;
     sexpr* currentEnd;
     sexpr* startExpr;
 
     void yyerror();
     int yylex(void);
-    sexpr definedFunctions[MAX_FUN];
+
+    int numOfFunctions = 0;
+    sexpr *definedFunctions[MAX_FUN];
     char *definedFunctionNames[MAX_FUN];
 
-    void genAdd();
-    void genStop();
     void genPushCon(int value);
+    void registerFun(char* name, sexpr* fun);
+    sexpr* findFun(char* name);
+    void functionCall(sexpr* calledFunction);
+    void cleanup();
+    void genExpr(instruction inst);
+    void 
 %}
 
 %%
 
-Program : /*nothing*/
-    | Program Def
+Program : /*nothing*/ {cleanup();}
+    | Program Def {cleanup();}
     ;
 
-Def : ID_TOK DEFINITION_TOK Expr {genStop();}
+Def : MAIN_TOK DEFINITION_TOK Expr {genExpr(STOP);}
+    | ID_TOK DEFINITION_TOK Expr {genExpr(RTN); registerFun($1, startExpr);}
     ;
 
-Expr: Term
-    | Term ADD_TOK Term {genAdd();}
+Expr: Term {genExpr(LDF); }
+    | Term ADD_TOK Term {genExpr(ADD);}
     | Term SUB_TOK Term
     | Term EQ_TOK Term
     | Term LEQ_TOK Term
@@ -61,6 +64,7 @@ Expr: Term
     ;
 
 Term : NUM_TOK {genPushCon($1);}
+    | ID_TOK {functionCall(findFun($1));}
     | PAROPEN_TOK Expr PARCLOSE_TOK
     ;
 
@@ -75,24 +79,18 @@ void yyerror(void){
 int main(void){
     memset(definedFunctionNames, 0, sizeof(char*) * MAX_FUN);
 
-    currentEnd = createSexpr();
-    currentEnd->car.instruction = NIL;
-    currentEnd-> cdr = NULL;
-
-    startExpr = currentEnd;
-
     yyparse();
 
     printf("finished parsing\n");
 
-    printSexpr(startExpr);
+    printSexpr(mainFun);
     printf("\n");
     
     sesecd dummy;
 
     dummy.s = NULL;
     dummy.e = NULL;
-    dummy.c = startExpr;
+    dummy.c = mainFun;
     dummy.d = NULL;
 
     while(dummy.c != NULL){
@@ -100,6 +98,30 @@ int main(void){
     }
 
     return 0;
+}
+
+void cleanup(){
+    currentEnd = createSexpr();
+    currentEnd->car.instruction = NIL;
+    currentEnd-> cdr = NULL;
+    startExpr = currentEnd;
+}
+
+void registerFun(char* name, sexpr* fun){
+    definedFunctionNames[numOfFunctions] = name;
+    definedFunctions[numOfFunctions++] = fun;
+}
+
+sexpr* findFun(char* name){
+    for(int i = 0; i < numOfFunctions; i++){
+        if(!strcmp(name, definedFunctionNames[i])){
+            return definedFunctions[i];
+        }
+    }
+
+    printf("Function %s is not defined\n", name);
+    fflush(stdout);
+    exit(EXIT_FAILURE);
 }
 
 void genPushCon(int con){
@@ -116,29 +138,29 @@ void genPushCon(int con){
     currentEnd = value;
 }
 
-void genAdd(){
-    sexpr* add = createSexpr();
-    add->car.instruction = ADD;
-    add->cdr = NULL;
+void genExpr(instruction inst){
+    sexpr* inExpr = createSexpr();
+    inExpr->car.instruction = inst;
+    inExpr->cdr = NULL;
 
-    currentEnd->cdr = add;
-    currentEnd = add;
+    currentEnd->cdr = inExpr;
+    currentEnd = inExpr;
 }
 
-void genRet(){
-    sexpr* ret = createSexpr();
-    ret->car.instruction = RTN;
-    ret->cdr = NULL;
+void functionCall(sexpr* calledFunction){
+    sexpr* loadExpr = createSexpr();
+    loadExpr->car.instruction = LDF;
 
-    currentEnd->cdr = ret;
-    currentEnd = ret;
-}
+    sexpr* loadFun = createSexpr();
+    loadFun->car.list = calledFunction;
+    
+    sexpr* applyFun = createSexpr();
+    applyFun->car.instruction = AP;
+    applyFun->cdr = NULL;
 
-void genStop(){
+    loadExpr->cdr = loadFun;
+    loadFun->cdr = applyFun;
 
-    sexpr* stop = createSexpr();
-    stop->car.instruction = STOP;
-    stop->cdr = NULL;
-
-    currentEnd->cdr = stop;
+    currentEnd->cdr = loadExpr;
+    currentEnd = applyFun;
 }
