@@ -61,7 +61,7 @@ invalid .
 {negnumber} {return NUM_TOK;}
 
 {main} {return MAIN_TOK;}
-{varid} {return ID_TOK;}
+{varid} {yylval.id = strdup(yytext); return ID_TOK;}
 
 {invalid} {fprintf(stderr, "Error - symbol not found");}
 
