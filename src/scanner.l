@@ -27,6 +27,7 @@ number  [0-9][0-9]*
 negnumber -[\t ]*[0-9][0-9]*
 newline \n
 
+main main
 varid [a-z][a-z|A-Z|0-9|\_|\']*
 
 guard \n[\t ]*\|
@@ -59,6 +60,7 @@ invalid .
 {number} {yylval.number = atoi(yytext); return NUM_TOK;}
 {negnumber} {return NUM_TOK;}
 
+{main} {return MAIN_TOK;}
 {varid} {return ID_TOK;}
 
 {invalid} {fprintf(stderr, "Error - symbol not found");}
