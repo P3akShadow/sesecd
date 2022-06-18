@@ -3,3 +3,5 @@ ssecd
 
 *.yy.*
 *.tab.*
+
+src/compiler
