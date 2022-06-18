@@ -80,4 +80,7 @@ struct sexpr *addValue(struct sexpr *car, int value);
 // returns new S expr with NIL instruction
 struct sexpr *createSexpr();
 
+//prints --a-- representation of the sexpr
+void printSexpr(sexpr* car);
+
 #endif
