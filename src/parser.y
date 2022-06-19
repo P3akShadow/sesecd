@@ -174,15 +174,18 @@ void registerParam(char* name){
 sexpr* findFun(char* name){
     for(int i = 0; i < numOfPars; i++){
         if(!strcmp(name, definedParams[i])){
-            sexpr* loc = createSexpr();
-            loc->car.value = 1;
-            loc->cdr = i + 1;
+            sexpr* locp = createSexpr();
+            locp->car.value = (numOfPars -i) + 1;
+
+            sexpr* locl = createSexpr();
+            locl->car.value = 1;
+            locl->cdr = locp;
 
             sexpr* ldInst = createSexpr();
-            ldInst->car.list = loc;
+            ldInst->car.list = locl;
 
             sexpr* type = createSexpr();//da müsst man halt function oder con rein tun können
-            type->car.value = 3;
+            type->car.value = CONSTANT;
             type->cdr=ldInst;
 
             return type;
