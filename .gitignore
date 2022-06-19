@@ -4,4 +4,4 @@ ssecd
 *.yy.*
 *.tab.*
 
-src/compiler
+*/compiler

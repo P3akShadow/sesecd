@@ -406,7 +406,7 @@ void apInstruction(struct sesecd *secd){
 
 void rtnInstruction(struct sesecd *secd){
 
-    if(secd->s->car.list = NULL) {
+    if(secd->s->car.list == NULL) {
             secd->s = consIL(secd->s->car.value, secd->d->car.list);
     } else  secd->s = consLL(secd->s->car.list, secd->d->car.list);
 

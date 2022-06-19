@@ -5,14 +5,19 @@
 #include "secd.h"
 
 #define MAX_FUN 1000
+#define MAX_PARAMS 100
+
+#define FUNCITON 0
+#define CONSTANT 1
 %}
 
-%union {unsigned long number; char* id;}
+%union {unsigned long number; char* id; void* subex;}
 
 %start Program
 
 %token <id> ID_TOK
 %token <number> NUM_TOK
+%type <subex> Applications
 
 %token MAIN_TOK DEFINITION_TOK ADD_TOK SUB_TOK EQ_TOK LEQ_TOK LE_TOK GEQ_TOK GE_TOK MUL_TOK DIV_TOK AND_TOK OR_TOK PAROPEN_TOK PARCLOSE_TOK LISTOPEN_TOK LISTCLOSE_TOK
 
@@ -30,10 +35,15 @@
     sexpr* definedFunctions[MAX_FUN];
     char *definedFunctionNames[MAX_FUN];
 
+    int numOfPars = 0;
+    char* definedParams[MAX_PARAMS];
+
     void cleanup();
     void genExpr(instruction inst);
     void registerFun(char* name, sexpr* fun);
+    void registerParam(char* name);
     sexpr* findFun(char* name);
+    sexpr* argumentAdd(sexpr* rawFun, sexpr* argument);
     void genExpr(instruction inst);
     void genPushCon(int value);
     void functionCall(sexpr* calledFunction);
@@ -46,7 +56,15 @@ Program : /*nothing*/ {cleanup();}
     ;
 
 Def : MAIN_TOK DEFINITION_TOK Expr {genExpr(STOP); mainFun = startExpr;}
-    | ID_TOK DEFINITION_TOK Expr {genExpr(RTN);registerFun($1, startExpr);printSexpr(startExpr);}
+    | ID_TOK Pars DEFINITION_TOK Expr {
+        genExpr(RTN);
+        registerFun($1, startExpr);
+        printSexpr(startExpr);
+        numOfPars = 0;}
+    ;
+
+Pars : /*nothing*/
+    | Pars ID_TOK {registerParam($2);}
     ;
 
 Expr: Term
@@ -64,11 +82,15 @@ Expr: Term
     ;
 
 Term : NUM_TOK {genPushCon($1);}
-    | ID_TOK {functionCall(findFun($1));}
+    | Applications {functionCall($1);}
     | PAROPEN_TOK Expr PARCLOSE_TOK
     ;
 
-%%;
+Applications : ID_TOK {$$ = findFun($1);}
+    | Applications ID_TOK {$$ = argumentAdd($1, findFun($2));}
+    ;
+
+%%
 
 void yyerror(void){
     printf("An error occured\n");
@@ -104,7 +126,7 @@ int main(void){
     dummy.d = nilExpr;
 
     int i = 0;
-    while(dummy.c != NULL && i < 10){
+    while(dummy.c != NULL){
         execute(&dummy);
         printf("after %d steps:\ns:\n", ++i);
 
@@ -126,16 +148,48 @@ void cleanup(){
     currentEnd->car.instruction = NIL;
     currentEnd-> cdr = NULL;
     startExpr = currentEnd;
+    numOfPars = 0;
 }
 
 void registerFun(char* name, sexpr* fun){
     definedFunctionNames[numOfFunctions] = name;
-    definedFunctions[numOfFunctions++] = fun;
+
+    sexpr* type = createSexpr();
+    type->car.value = FUNCITON;
+
+    sexpr* base = createSexpr();
+    base->car.list = createSexpr();
+    base->car.list->car.list = NULL;
+    base->car.list->cdr = NULL;
+    base->cdr = fun;
+
+    type->cdr = base;
+    definedFunctions[numOfFunctions++] = type;
+}
+
+void registerParam(char* name){
+    definedParams[numOfPars++] = name;
 }
 
 sexpr* findFun(char* name){
+    for(int i = 0; i < numOfPars; i++){
+        if(!strcmp(name, definedParams[i])){
+            sexpr* loc = createSexpr();
+            loc->car.value = 1;
+            loc->cdr = i + 1;
+
+            sexpr* ldInst = createSexpr();
+            ldInst->car.list = loc;
+
+            sexpr* type = createSexpr();//da müsst man halt function oder con rein tun können
+            type->car.value = 3;
+            type->cdr=ldInst;
+
+            return type;
+        }
+    }
+
     for(int i = 0; i < numOfFunctions; i++){
-        fflush(stdout);
         if(!strcmp(name, definedFunctionNames[i])){
             return definedFunctions[i];
         }
@@ -169,14 +223,39 @@ void genExpr(instruction inst){
     currentEnd = inExpr;
 }
 
-void functionCall(sexpr* calledFunction){
+sexpr* argumentAdd(sexpr* rawFun, sexpr* argument){
+    sexpr* env = rawFun->cdr->car.list;
+    sexpr* fun = rawFun->cdr->cdr;
+
+    sexpr* newElem = createSexpr();
+    newElem->car = argument->car;
+    newElem->cdr = env;
+
+    sexpr* newRoot = createSexpr();
+    newRoot->car.list = newElem;
+    newRoot->cdr = fun;
+
+    sexpr* newType = createSexpr();
+    newType->car.value = FUNCITON;
+    newType->cdr = newRoot;
+
+    return newType;
+}
+
+void functionCall(sexpr* callRecord){
+    if(callRecord->car.value == CONSTANT){
+        genPushCon(callRecord->cdr->car.value);
+        return;
+    }
+
+    sexpr* env = callRecord->cdr->car.list;
+    sexpr* calledFunction = callRecord->cdr->cdr;
+
     sexpr* loadEnv = createSexpr();
     loadEnv->car.instruction = LDC;
 
     sexpr* constructedEnv = createSexpr();
-    constructedEnv->car.list = createSexpr();
-    constructedEnv->car.list->car.list = NULL;
-    constructedEnv->car.list->cdr = NULL;
+    constructedEnv->car.list = env;
 
     sexpr* loadExpr = createSexpr();
     loadExpr->car.instruction = LDF;
