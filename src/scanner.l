@@ -63,7 +63,7 @@ invalid .
 {main} {return MAIN_TOK;}
 {varid} {yylval.id = strdup(yytext); return ID_TOK;}
 
-{invalid} {fprintf(stderr, "Error - symbol not found");}
+{invalid} {fprintf(stderr, "Error - symbol not found\n");}
 
 
 %%

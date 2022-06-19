@@ -94,13 +94,28 @@ int main(void){
     
     sesecd dummy;
 
-    dummy.s = NULL;
-    dummy.e = NULL;
-    dummy.c = mainFun;
-    dummy.d = NULL;
+    struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
+    nil->car.instruction = NIL;
+    sexpr* nilExpr = consLL(nil,NULL);
 
-    while(dummy.c != NULL){
+    dummy.s = nilExpr;
+    dummy.e = nilExpr;
+    dummy.c = mainFun;
+    dummy.d = nilExpr;
+
+    int i = 0;
+    while(dummy.c != NULL && i < 10){
         execute(&dummy);
+        printf("after %d steps:\ns:\n", ++i);
+
+        printSexpr(dummy.s);
+        printf("\ne:\n");
+        printSexpr(dummy.e);
+        printf("\nc:\n");
+        printSexpr(dummy.c);
+        printf("\nd:\n");
+        printSexpr(dummy.d);
+        printf("\n");
     }
 
     return 0;
@@ -155,19 +170,29 @@ void genExpr(instruction inst){
 }
 
 void functionCall(sexpr* calledFunction){
+    sexpr* loadEnv = createSexpr();
+    loadEnv->car.instruction = LDC;
+
+    sexpr* constructedEnv = createSexpr();
+    constructedEnv->car.list = createSexpr();
+    constructedEnv->car.list->car.list = NULL;
+    constructedEnv->car.list->cdr = NULL;
+
     sexpr* loadExpr = createSexpr();
     loadExpr->car.instruction = LDF;
 
     sexpr* loadFun = createSexpr();
     loadFun->car.list = calledFunction;
     
-    sexpr* applyFun = createSexpr();
-    applyFun->car.instruction = AP;
-    applyFun->cdr = NULL;
+    sexpr* apFun = createSexpr();
+    apFun->car.instruction = AP;
+    apFun->cdr = NULL;
 
+    loadEnv->cdr = constructedEnv;
+    constructedEnv->cdr = loadExpr;
     loadExpr->cdr = loadFun;
-    loadFun->cdr = applyFun;
+    loadFun->cdr = apFun;
 
-    currentEnd->cdr = loadExpr;
-    currentEnd = applyFun;
+    currentEnd->cdr = loadEnv;
+    currentEnd = apFun;
 }

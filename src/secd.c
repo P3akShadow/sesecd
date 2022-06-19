@@ -359,14 +359,37 @@ void joinInstruction(struct sesecd *secd){
 }
 
 void ldfInstruction(struct sesecd *secd){
+    sexpr* funToLoad = secd->c->cdr->car.list;
+    sexpr* restOfControl = secd->c->cdr->cdr;
+
+    sexpr* pushedFun = consLL(funToLoad, secd->e);
+
+    printSexpr(pushedFun);
+    printf("\n");
+
+    secd->s = consLL(pushedFun, secd->s);
+    secd->c = restOfControl;
+    /*
     struct sexpr *functionEnviroment;
     functionEnviroment = consLL(secd->c->cdr->car.list, secd->e);
     secd->s = consLL(functionEnviroment, secd->s);
     secd->c = secd->c->cdr->cdr;
+    */
 }
 
 void apInstruction(struct sesecd *secd){
+    /*
+    sexpr* funToApply = secd->s->car->car;
+    sexpr* loadedEnv = secd->s->car->cdr;
+    sexpr* environmentOnStack = secd->s->cdr->car.list;
+    sexpr* stackContinuation = secd->s->cdr->cdr;
+    sexpr* continuation = secd->c->cdr;
 
+    secd->d = consLL(stackContinuation, consLL(secd->e, consLL(continuation, secd->d)));
+    secd->s = NULL;
+    secd->e = consLL(environmentOnStack, loadedEnv);
+    secd->c = funToApply;
+   */ 
     struct sexpr *controlDump;
     struct sexpr *envControlDump;
     controlDump = consLL(secd->c->cdr, secd->d);
@@ -374,6 +397,8 @@ void apInstruction(struct sesecd *secd){
     secd->d = consLL(secd->s->cdr->cdr, envControlDump);
     secd->e = consLL(secd->s->cdr->car.list, secd->s->car.list->cdr);
     
+    secd->c = secd->s->car.list->car.list;
+
     struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
     nil->car.instruction = NIL;
     secd->s = consLL(nil, NULL);
