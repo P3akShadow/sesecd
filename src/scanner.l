@@ -22,7 +22,7 @@ listopen \[
 listclose \]
 
 comment --.*
-whitespace [\t ]*
+whitespace [\t ]+
 number  [0-9][0-9]*
 negnumber -[\t ]*[0-9][0-9]*
 newline \n
@@ -59,6 +59,8 @@ invalid .
 
 {number} {yylval.number = atoi(yytext); return NUM_TOK;}
 {negnumber} {return NUM_TOK;}
+
+{newline} {return NEWLINE_TOK;}
 
 {main} {return MAIN_TOK;}
 {varid} {yylval.id = strdup(yytext); return ID_TOK;}

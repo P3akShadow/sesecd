@@ -63,6 +63,8 @@ void dumInstruction(struct sesecd *secd);
 void rapInstruction(struct sesecd *secd);
 void stopInstruction(struct sesecd *secd);
 
+void specparInstruction(sesecd *secd);
+
 void execute(struct sesecd *secd){
 
 if(secd->c->car.instruction == 0) {
@@ -151,6 +153,9 @@ switch(secd->c->car.instruction) {
         stopInstruction(secd);
         break;
 
+    case SPECPAR:
+        specparInstruction(secd);
+        break;
     }
 }
 
@@ -194,7 +199,7 @@ void nilInstruction(struct sesecd *secd){
 }
 
 void ldcInstruction(struct sesecd *secd){
-    secd->s = consIL(secd->c->cdr->car.value, secd->s);
+    secd->s = consLL(secd->c->cdr->car.list, secd->s);
     if(secd->c->cdr->cdr == NULL) {
         printf("Error in S-Expression, no Instructions after LDC.");
         exit(1);
@@ -212,7 +217,7 @@ void ldInstruction(struct sesecd *secd){
         environment = environment->cdr;
     }
     environment = environment->car.list;
-        for(int i = 1; i < element; i++) {
+        for(int i = 0; i < element; i++) {
         environment = environment->cdr;
     }
     secd->s = consIL(environment->car.value, secd->s);
@@ -257,9 +262,33 @@ void consInstruction(struct sesecd *secd){
     secd->c = secd->c->cdr;
 }
 
-void addInstruction(struct sesecd *secd){
+void expandFrameOnStack(sesecd *secd){
+    sexpr* ap = consIL(AP, secd->c);
+    secd->c = ap;
 
-    int result = secd->s->car.value + secd->s->cdr->car.value;
+    sexpr* env = consLL(secd->s->car.list->cdr->car.list, secd->s->cdr);
+    sexpr* pushedFun = consLL(secd->s->car.list->cdr->cdr, secd->e);
+    secd->s = consLL(pushedFun, env);
+}
+
+void addInstruction(struct sesecd *secd){
+    if(secd->s->cdr->car.list->car.value == FUNCTION){
+        sexpr* oldStack = secd->s;
+        secd->s = secd->s->cdr;
+
+        expandFrameOnStack(secd);
+        apInstruction(secd);
+        secd->s = consLL(oldStack->car.list, secd->s);
+        return;
+    }
+    
+    if(secd->s->car.list->car.value == FUNCTION){
+        expandFrameOnStack(secd);
+        apInstruction(secd);
+        return;
+    }
+
+    int result = secd->s->car.list->cdr->car.value + secd->s->cdr->car.list->cdr->car.value;
     secd->s = consIL(result, secd->s->cdr->cdr);
     secd->c = secd->c->cdr;
 }
@@ -396,7 +425,7 @@ void apInstruction(struct sesecd *secd){
     envControlDump = consLL(secd->e, controlDump);
     secd->d = consLL(secd->s->cdr->cdr, envControlDump);
     secd->e = consLL(secd->s->cdr->car.list, secd->s->car.list->cdr);
-    
+
     secd->c = secd->s->car.list->car.list;
 
     struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
@@ -439,11 +468,43 @@ void rapInstruction(struct sesecd *secd){
 }
 
 void stopInstruction(struct sesecd *secd) {
-    printf("Result: %d\n", secd->s->car.value);
+    printf("stop found\n");
+
+    if(secd->s->car.list->car.value == CONSTANT){
+        printf("Result: %d\n", secd->s->car.list->cdr->car.value);
+        exit(0);
+    }
+
+    printf("Still a function on stack!\nExpanding to show a number\n");
+    expandFrameOnStack(secd);
+
+    for(int i = 0; i < 100; i++){
+        execute(secd);
+        printf("after %d steps of final evaluation:\ns:\n", ++i);
+
+        printSexpr(secd->s);
+        printf("\ne:\n");
+        printSexpr(secd->e);
+        printf("\nc:\n");
+        printSexpr(secd->c);
+        printf("\nd:\n");
+        printSexpr(secd->d);
+        printf("\n");
+    }
+
     exit(0);
 }
 
+void specparInstruction(sesecd *secd) {
+    printf("specifiying a param\n");
 
+    sexpr* oldEnv = secd->s->cdr->car.list->cdr->car.list;
+    //loads from stack in order to be able to digest values that have already been passed as params
+    sexpr* newEnv = consLL(secd->s->car.list, oldEnv);
+    sexpr* newRoot = consLL(newEnv, secd->s->cdr->car.list->cdr->cdr);
+    secd->s = consLL(newRoot, secd->s->cdr->cdr);
+    secd->c = secd->c->cdr;
+}
 
 struct sexpr *addCDRList(struct sexpr *car, struct sexpr *cadr){
     struct sexpr *cdr = (struct sexpr*) malloc(sizeof(struct sexpr));
@@ -478,7 +539,7 @@ void printSexpr(sexpr* car){
         printf("NULL");
         return;
     }
-    printf("{car:%d, cdr:", car->car);
+    printf("{car:%d, cdr:", car->car.value);
     printSexpr(car->cdr);
     printf("}");
 }

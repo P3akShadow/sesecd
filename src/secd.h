@@ -28,7 +28,11 @@ typedef enum instruction{
     RTN,
     DUM,
     RAP,
-    STOP
+    STOP,
+
+    SPECPAR,
+    FUNCTION,
+    CONSTANT
 } instruction;
 
 
