@@ -155,22 +155,41 @@ switch(secd->c->car.instruction) {
 }
 
 struct sexpr *consLL(struct sexpr *car, struct sexpr *cdr){
+    if (car == NULL) {
+        printf("error during cons. car == null\n");
+        exit(1);
+    }
+    if (cdr== NULL) {
+        printf("error during cons. cdr == null\n");
+        exit(1);
+    }
     struct sexpr *cons = (struct sexpr*) malloc(sizeof(struct sexpr));
     cons->car.list = car;
     cons->cdr = cdr;
+    cons->type = LIST;
     return cons;
 }
 
 struct sexpr *consIL(int car, struct sexpr *cdr){
+    if (cdr== NULL) {
+        printf("error during cons. cdr == null\n");
+        exit(1);
+    }
     struct sexpr *cons = (struct sexpr*) malloc(sizeof(struct sexpr));
     cons->car.value = car;
+    cons->type = VALUE;
     cons->cdr = cdr;
     return cons;
 }
 struct sexpr *consLI(struct sexpr *car, int cdr){
+    if (car == NULL) {
+        printf("error during consLI. car == null, cdr = %d\n", cdr);
+        exit(1);
+    }
     struct sexpr *cons = (struct sexpr*) malloc(sizeof(struct sexpr));
     struct sexpr *consCDR = (struct sexpr*) malloc(sizeof(struct sexpr));
     cons->car.list = car;
+    cons->type = LIST;
     consCDR->car.value = cdr;
     cons->cdr = consCDR;
     return cons;
@@ -180,7 +199,9 @@ struct sexpr *consII(int car, int cdr){
     struct sexpr *cons = (struct sexpr*) malloc(sizeof(struct sexpr));
     struct sexpr *consCDR = (struct sexpr*) malloc(sizeof(struct sexpr));
     cons->car.value = car;
+    cons->type = VALUE;
     consCDR->car.value = cdr;
+    consCDR->type = VALUE;
     cons->cdr = consCDR;
     return cons;
 }
@@ -188,8 +209,9 @@ struct sexpr *consII(int car, int cdr){
 
 void nilInstruction(struct sesecd *secd){
     struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
-    nil->car.instruction = NIL;
-    secd->s = consLL(nil, NULL);
+    nil->type = NILVALUE;
+    nil->cdr = secd->s->cdr;
+    secd->s = nil;
     secd->c = secd->c->cdr;
 }
 
@@ -206,7 +228,7 @@ void ldcInstruction(struct sesecd *secd){
 void ldInstruction(struct sesecd *secd){
 
     int subList = secd->c->cdr->car.list->car.value;
-    int element = secd->c->cdr->car.list->car.list->car.value;
+    int element = secd->c->cdr->car.list->cdr->car.value;
     struct sexpr *environment = secd->e;
     for(int i = 1; i < subList; i++) {
         environment = environment->cdr;
@@ -215,7 +237,17 @@ void ldInstruction(struct sesecd *secd){
         for(int i = 1; i < element; i++) {
         environment = environment->cdr;
     }
+    if(environment->type == VALUE) {
+    printf("loaded value from env: %d\n", environment->car.value);
     secd->s = consIL(environment->car.value, secd->s);
+    }
+    else if(environment->type == LIST || environment->type == INSTRUCTION) {
+    printf("loaded function from env\n");
+    secd->s = consLL(environment->car.list, secd->s);
+    }
+    else{
+        secd->s = consLL(createSexpr(), secd->s);
+    }
     secd->c = secd->c->cdr->cdr;
 }
 
@@ -244,16 +276,21 @@ void cdrInstruction(struct sesecd *secd){
 void consInstruction(struct sesecd *secd){
 
     struct sexpr *newList;
-    if(secd->s->car.list == NULL && secd->s->cdr->car.list == NULL) {
+    if(secd->s->type != LIST && secd->s->cdr->type != LIST) {
         newList = consII(secd->s->car.value, secd->s->cdr->car.value);
-    } else if (secd->s->car.list == NULL) {
+    } else if (secd->s->type != LIST) {
         newList = consIL(secd->s->car.value, secd->s->cdr->car.list);
-    } else if (secd->s->cdr->car.list == NULL) {
+    } else if (secd->s->cdr->type != LIST) {
         newList = consLI(secd->s->car.list, secd->s->cdr->car.value);
     } else {
         newList = consLL(secd->s->car.list, secd->s->cdr->car.list);
     }
-    secd->c = consLL(newList, secd->s->cdr->cdr);
+    if (secd->s->cdr->cdr != NULL) {
+    secd->s = consLL(newList, secd->s->cdr->cdr);
+    } else {
+        struct sexpr *nil = createSexpr();
+        secd->s = consLL(newList, nil);
+    }
     secd->c = secd->c->cdr;
 }
 
@@ -364,7 +401,7 @@ void ldfInstruction(struct sesecd *secd){
 
     sexpr* pushedFun = consLL(funToLoad, secd->e);
 
-    printSexpr(pushedFun);
+    //printSexpr(pushedFun);
     printf("\n");
 
     secd->s = consLL(pushedFun, secd->s);
@@ -394,19 +431,36 @@ void apInstruction(struct sesecd *secd){
     struct sexpr *envControlDump;
     controlDump = consLL(secd->c->cdr, secd->d);
     envControlDump = consLL(secd->e, controlDump);
+    if(secd->s->cdr->cdr != NULL) {
     secd->d = consLL(secd->s->cdr->cdr, envControlDump);
+    } else {
+        struct sexpr *nil = createSexpr();
+        secd->d = consLL(nil, envControlDump);
+    }
+    /*
+    if(secd->s->cdr->type != LIST && secd->s->car.list->cdr->type != LIST) {
+        secd->e = consII(secd->s->cdr->car.value, secd->s->car.list->cdr->car.value);
+    } else if (secd->s->car.list->cdr->type!= LIST) {
+        secd->e = consIL(secd->s->cdr->car.value, secd->s->car.list->cdr);
+    } else if (secd->s->type != LIST) {
+        secd->e = consLI(secd->s->cdr->car.list, secd->s->car.list->cdr->car.value);
+    } else {
+        secd->e = consLL(secd->s->cdr->car.list, secd->s->car.list->cdr);
+    }
+    */
+
     secd->e = consLL(secd->s->cdr->car.list, secd->s->car.list->cdr);
     
     secd->c = secd->s->car.list->car.list;
 
     struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
-    nil->car.instruction = NIL;
-    secd->s = consLL(nil, NULL);
+    nil->type = NILVALUE;
+    secd->s = nil;
 }
 
 void rtnInstruction(struct sesecd *secd){
 
-    if(secd->s->car.list == NULL) {
+    if(secd->s->type != LIST) {
             secd->s = consIL(secd->s->car.value, secd->d->car.list);
     } else  secd->s = consLL(secd->s->car.list, secd->d->car.list);
 
@@ -418,7 +472,7 @@ void rtnInstruction(struct sesecd *secd){
 void dumInstruction(struct sesecd *secd){
 
     struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
-    nil->car.instruction = NIL;
+    nil->type= NILVALUE;
     secd->e = consLL(nil, secd->e);
     secd->c = secd->c->cdr;
 }
@@ -429,13 +483,32 @@ void rapInstruction(struct sesecd *secd){
     struct sexpr *envControlDump;
     controlDump = consLL(secd->c->cdr, secd->d);
     envControlDump = consLL(secd->e, controlDump);
+    if(secd->s->cdr->cdr != NULL) {
     secd->d = consLL(secd->s->cdr->cdr, envControlDump);
-    secd->e = consLL(secd->s->car.list->cdr, secd->s->cdr->car.list);
+    } else {
+        struct sexpr *nil = createSexpr();
+        secd->d = consLL(nil, envControlDump);
+    }
+
+    /*
+    if(secd->s->cdr->type != LIST && secd->s->car.list->cdr->cdr->type != LIST) {
+        secd->e = consII(secd->s->cdr->car.value, secd->s->car.list->cdr->cdr->car.value);
+    } else if (secd->s->car.list->cdr->cdr->type != LIST) {
+        secd->e = consIL(secd->s->cdr->car.value, secd->s->car.list->cdr->cdr);
+    } else if (secd->s->type != LIST) {
+        secd->e = consLI(secd->s->cdr->car.list, secd->s->car.list->cdr->cdr->car.value);
+    } else {
+        secd->e = consLL(secd->s->cdr->car.list, secd->s->car.list->cdr->cdr);
+    }
+    */
+    secd->e = secd->s->car.list->cdr;
+    // rplaca. replace head of e 
+    secd->e = consLL(secd->s->cdr->car.list, secd->e->cdr);
     secd->c = secd->s->car.list->car.list;
     
     struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
-    nil->car.instruction = NIL;
-    secd->s = consLL(nil, NULL);
+    nil->type = NILVALUE;
+    secd->s = nil;
 }
 
 void stopInstruction(struct sesecd *secd) {
@@ -446,8 +519,13 @@ void stopInstruction(struct sesecd *secd) {
 
 
 struct sexpr *addCDRList(struct sexpr *car, struct sexpr *cadr){
+    if (cadr == NULL) {
+        printf("cadr == NULL in addCDRList\n");
+        exit(1);
+    }
     struct sexpr *cdr = (struct sexpr*) malloc(sizeof(struct sexpr));
     car->cdr = cdr;
+    cdr->type = LIST;
     cdr->car.list = cadr;
     return cdr;
 }
@@ -455,6 +533,7 @@ struct sexpr *addCDRList(struct sexpr *car, struct sexpr *cadr){
 struct sexpr *addInstructions(struct sexpr *car, enum instruction instruction){
     struct sexpr *cdr = (struct sexpr*) malloc(sizeof(struct sexpr));
     car->cdr = cdr;
+    cdr->type = INSTRUCTION;
     cdr->car.instruction = instruction;
     return cdr;
 }
@@ -462,12 +541,14 @@ struct sexpr *addInstructions(struct sexpr *car, enum instruction instruction){
 struct sexpr *addValue(struct sexpr *car, int value){
     struct sexpr *cdr = (struct sexpr*) malloc(sizeof(struct sexpr));
     car->cdr = cdr;
+    cdr->type = VALUE;
     cdr->car.value = value;
     return cdr;
 }
 
 struct sexpr *createSexpr(){
     struct sexpr *car = (struct sexpr*) malloc(sizeof(struct sexpr));
+    car->type = NILVALUE;
     car->car.instruction = NIL;
     return car;
 }
