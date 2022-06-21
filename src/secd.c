@@ -286,25 +286,55 @@ void expandFrameOnStack(sesecd *secd){
 }
 
 void addInstruction(struct sesecd *secd){
-    if(secd->s->cdr->car.list->car.value == FUNCTION){
+    if(secd->s->cdr->car.list->type == FUNCTION){
         sexpr* oldStack = secd->s;
         secd->s = secd->s->cdr;
 
         expandFrameOnStack(secd);
-        apInstruction(secd);//must be changed to evaluate or so
+        
+        for(int i = 0; i < 100; i++){
+            execute(secd);
+            printf("after %d steps of final evaluation:\ns:\n", ++i);
+    
+            printSexpr(secd->s);
+            printf("\ne:\n");
+            printSexpr(secd->e);
+            printf("\nc:\n");
+            printSexpr(secd->c);
+            printf("\nd:\n");
+            printSexpr(secd->d);
+            printf("\n");
+        }
+        
         secd->s = consLL(oldStack->car.list, secd->s);
         return;
     }
     
-    if(secd->s->car.list->car.value == FUNCTION){
+    if(secd->s->car.list->type == FUNCTION){
         expandFrameOnStack(secd);
-        apInstruction(secd);
+        for(int i = 0; i < 100; i++){
+            execute(secd);
+            printf("after %d steps of final evaluation:\ns:\n", ++i);
+    
+            printSexpr(secd->s);
+            printf("\ne:\n");
+            printSexpr(secd->e);
+            printf("\nc:\n");
+            printSexpr(secd->c);
+            printf("\nd:\n");
+            printSexpr(secd->d);
+            printf("\n");
+        }
         return;
     }
 
-    int result = secd->s->car.list->cdr->car.value + secd->s->cdr->car.list->cdr->car.value;
-    secd->s = consIL(result, secd->s->cdr->cdr);
-    secd->c = secd->c->cdr;
+    if(secd->s->cdr->car.list->type == CONSTANT || secd->s->car.list->type == CONSTANT){
+        int result = secd->s->car.list->car.value + secd->s->cdr->car.list->car.value;
+        sexpr* valCont = consIL(result, NULL);
+        valCont->type = CONSTANT;
+        secd->s = consLL(valCont, secd->s->cdr->cdr);
+        secd->c = secd->c->cdr;
+    }
 }
 
 void subInstruction(struct sesecd *secd){
@@ -492,7 +522,7 @@ void stopInstruction(struct sesecd *secd) {
     printf("Still a function on stack!\nExpanding to show a number\n");
     expandFrameOnStack(secd);
 
-    for(int i = 0; i < 10; i++){
+    for(int i = 0; i < 100; i++){
         execute(secd);
         printf("after %d steps of final evaluation:\ns:\n", ++i);
 
@@ -512,12 +542,12 @@ void stopInstruction(struct sesecd *secd) {
 void specparInstruction(sesecd *secd) {
     printf("specifiying a param\n");
 
-    sexpr* oldEnv = secd->s->cdr->car.list->cdr->car.list;
+    sexpr* oldEnv = secd->s->cdr->car.list->car.list;
     //loads from stack in order to be able to digest values that have already been passed as params
     sexpr* newEnv = consLL(secd->s->car.list, oldEnv);
-    sexpr* newRoot = consLL(newEnv, secd->s->cdr->car.list->cdr->cdr);
-    sexpr* newType =  consIL(FUNCTION, newRoot);
-    secd->s = consLL(newType, secd->s->cdr->cdr);
+    sexpr* newRoot = consLL(newEnv, secd->s->cdr->car.list->cdr);
+    newRoot->type = FUNCTION;
+    secd->s = consLL(newRoot, secd->s->cdr->cdr);
     secd->c = secd->c->cdr;
 }
 

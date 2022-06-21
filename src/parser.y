@@ -163,6 +163,8 @@ void registerFun(char* name, sexpr* fun){
     root->type = FUNCTION;
     root->car.list = env;
     root->cdr = fun;
+
+    printf("written fun %s on root %d\n", name, root);
     
     definedFunctions[numOfFunctions++] = root;
 }
