@@ -155,17 +155,16 @@ void cleanup(){
 void registerFun(char* name, sexpr* fun){
     definedFunctionNames[numOfFunctions] = name;
 
-    sexpr* type = createSexpr();
-    type->car.instruction = FUNCTION;
+    sexpr* env = createSexpr();
+    env->car.list = NULL;
+    env->cdr = NULL;
 
-    sexpr* base = createSexpr();
-    base->car.list = createSexpr();
-    base->car.list->car.list = NULL;
-    base->car.list->cdr = NULL;
-    base->cdr = fun;
-
-    type->cdr = base;
-    definedFunctions[numOfFunctions++] = type;
+    sexpr* root = createSexpr();
+    root->type = FUNCTION;
+    root->car.list = env;
+    root->cdr = fun;
+    
+    definedFunctions[numOfFunctions++] = root;
 }
 
 void registerParam(char* name){
@@ -217,15 +216,12 @@ void loadFun(char* name){
 
 void genPushCon(int con){
     sexpr* value = createSexpr();
+    value->type = CONSTANT;
     value->car.value = con;
     value->cdr = NULL;
 
-    sexpr* type = createSexpr();
-    type->car.instruction = CONSTANT;
-    type->cdr = value;
-
     sexpr* container = createSexpr();
-    container->car.list = type;
+    container->car.list = value;
 
     sexpr* loader = createSexpr();
     loader->car.instruction = LDC;

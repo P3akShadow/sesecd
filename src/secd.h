@@ -31,15 +31,22 @@ typedef enum instruction{
     STOP,
 
     SPECPAR,
-    FUNCTION,
-    CONSTANT
+    /*FUNCTION,
+    CONSTANT*/
 } instruction;
+
+typedef enum typeInfo{
+  FUNCTION,
+  CONSTANT
+} typeInfo;
 
 
 // Nested list that can contain tree structured data. car is the head and cdr the tail. 
 // (contents of the address part of the register, contents of the decrement part of the register)
 // value wil normally be interpreted as a number, but after instructions that produce a true or false value, 0 will be false and ever other integer true.
 typedef struct sexpr {
+
+  typeInfo type;
   
   struct sexpr *cdr;
   union car {

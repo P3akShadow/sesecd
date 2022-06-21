@@ -280,23 +280,8 @@ void expandFrameOnStack(sesecd *secd){
     sexpr* ap = consIL(AP, secd->c);
     secd->c = ap;
 
-    sexpr* env = consLL(secd->s->car.list->cdr->car.list, secd->s->cdr);
-
-    printf("stack:");
-    printSexpr(secd->s);
-    printf("\ncarlist:");
-    printSexpr(secd->s->car.list);
-    printf("\ncarlistcdrcarlist:");
-    printSexpr(secd->s->car.list->cdr->car.list);
-
-    printf("\nprollyfirst arg:");
-    printSexpr(env->car.list->car.list);
-
-    printf("\nexpanding environment:\n");
-    printSexpr(env);
-    printf("\n");
-
-    sexpr* pushedFun = consLL(secd->s->car.list->cdr->cdr, secd->e);
+    sexpr* env = consLL(secd->s->car.list->car.list, secd->s->cdr);
+    sexpr* pushedFun = consLL(secd->s->car.list->cdr, secd->e);
     secd->s = consLL(pushedFun, env);
 }
 
@@ -499,15 +484,15 @@ void rapInstruction(struct sesecd *secd){
 void stopInstruction(struct sesecd *secd) {
     printf("stop found\n");
 
-    if(secd->s->car.list->car.value == CONSTANT){
-        printf("Result: %d\n", secd->s->car.list->cdr->car.value);
+    if(secd->s->car.list->type == CONSTANT){
+        printf("Result: %d\n", secd->s->car.list->car.value);
         exit(0);
     }
 
     printf("Still a function on stack!\nExpanding to show a number\n");
     expandFrameOnStack(secd);
 
-    for(int i = 0; i < 100; i++){
+    for(int i = 0; i < 10; i++){
         execute(secd);
         printf("after %d steps of final evaluation:\ns:\n", ++i);
 
