@@ -31,6 +31,13 @@ typedef enum instruction{
     STOP
 } instruction;
 
+typedef enum storedType{
+  NILVALUE,
+  INSTRUCTION,
+  VALUE,
+  LIST,
+  DUMMY
+} storedType;
 
 // Nested list that can contain tree structured data. car is the head and cdr the tail. 
 // (contents of the address part of the register, contents of the decrement part of the register)
@@ -38,6 +45,7 @@ typedef enum instruction{
 typedef struct sexpr {
   
   struct sexpr *cdr;
+  enum storedType type;
   union car {
     struct sexpr *list;
     int value;
@@ -83,4 +91,6 @@ struct sexpr *createSexpr();
 //prints --a-- representation of the sexpr
 void printSexpr(sexpr* car);
 
+
+struct sexpr *rplaca(struct sexpr *env, struct sexpr* toBeReplacedWith);
 #endif
