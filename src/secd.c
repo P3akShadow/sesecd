@@ -210,17 +210,31 @@ void ldcInstruction(struct sesecd *secd){
 // ld(5.3) means that the third element of the fifth list in E is being. The list is in the cadr of c. (cdr->car.)
 void ldInstruction(struct sesecd *secd){
 
+    fprintf(stderr, "ld 1\n");
+
+    printf("param construct:\n");
+    printSexpr(secd->c->cdr->car.list);
+    printf("\n");
+
+    printf("environment:\n");
+    printSexpr(secd->e);
+    printf("\n");
+    fflush(stdout);
+
     int subList = secd->c->cdr->car.list->car.value;
-    int element = secd->c->cdr->car.list->car.list->car.value;
+    int element = secd->c->cdr->car.list->cdr->car.value;
+
     struct sexpr *environment = secd->e;
     for(int i = 1; i < subList; i++) {
+        fprintf(stderr, "i@%d\n", i);
         environment = environment->cdr;
     }
     environment = environment->car.list;
-        for(int i = 0; i < element; i++) {
+    for(int i = 1; i < element; i++) {
+        fprintf(stderr, "i@%d\n", i);
         environment = environment->cdr;
     }
-    secd->s = consIL(environment->car.value, secd->s);
+    secd->s = consLL(environment->car.list, secd->s);
     secd->c = secd->c->cdr->cdr;
 }
 
@@ -267,6 +281,21 @@ void expandFrameOnStack(sesecd *secd){
     secd->c = ap;
 
     sexpr* env = consLL(secd->s->car.list->cdr->car.list, secd->s->cdr);
+
+    printf("stack:");
+    printSexpr(secd->s);
+    printf("\ncarlist:");
+    printSexpr(secd->s->car.list);
+    printf("\ncarlistcdrcarlist:");
+    printSexpr(secd->s->car.list->cdr->car.list);
+
+    printf("\nprollyfirst arg:");
+    printSexpr(env->car.list->car.list);
+
+    printf("\nexpanding environment:\n");
+    printSexpr(env);
+    printf("\n");
+
     sexpr* pushedFun = consLL(secd->s->car.list->cdr->cdr, secd->e);
     secd->s = consLL(pushedFun, env);
 }
@@ -277,7 +306,7 @@ void addInstruction(struct sesecd *secd){
         secd->s = secd->s->cdr;
 
         expandFrameOnStack(secd);
-        apInstruction(secd);
+        apInstruction(secd);//must be changed to evaluate or so
         secd->s = consLL(oldStack->car.list, secd->s);
         return;
     }
@@ -502,7 +531,8 @@ void specparInstruction(sesecd *secd) {
     //loads from stack in order to be able to digest values that have already been passed as params
     sexpr* newEnv = consLL(secd->s->car.list, oldEnv);
     sexpr* newRoot = consLL(newEnv, secd->s->cdr->car.list->cdr->cdr);
-    secd->s = consLL(newRoot, secd->s->cdr->cdr);
+    sexpr* newType =  consIL(FUNCTION, newRoot);
+    secd->s = consLL(newType, secd->s->cdr->cdr);
     secd->c = secd->c->cdr;
 }
 
