@@ -38,9 +38,9 @@ int main() {
     workPointer = addInstructions(workPointer, ADD);
     workPointer = addInstructions(workPointer, STOP);
 */
-    //stack = createSexpr();
-    //env= createSexpr();
-    //dump = createSexpr();
+    stack = createSexpr();
+    env= createSexpr();
+    dump = createSexpr();
 
 // try code from script
     // 1.1
@@ -79,17 +79,19 @@ int main() {
     workPointer = addValue(workPointer, 2);
 
     sel1 = createSexpr();
-    sel1->car.instruction = LDC;
+    //sel1->car.instruction = LDC;
+    sel1->car.instruction = LD;
     workPointer = sel1;
-    workPointer = addValue(workPointer, 1);
+    workPointer = addCDRList(workPointer, ld2);
+    //workPointer = addValue(workPointer, 1);
     workPointer = addInstructions(workPointer, JOIN);
 
     sel2 = createSexpr();
     workPointer = sel2;
     workPointer = addInstructions(workPointer, LD);
-    workPointer = addCDRList(workPointer, ld);
-    workPointer = addInstructions(workPointer, LD);
     workPointer = addCDRList(workPointer, ld2);
+    workPointer = addInstructions(workPointer, LD);
+    workPointer = addCDRList(workPointer, ld);
     workPointer = addInstructions(workPointer, MUL);
     workPointer = addInstructions(workPointer, CONS);
     workPointer = addInstructions(workPointer, LD);
@@ -148,7 +150,7 @@ int main() {
     workPointer = addValue(workPointer, 1);
     workPointer = addInstructions(workPointer, CONS);
     workPointer = addInstructions(workPointer, LDC);
-    workPointer = addValue(workPointer, 3);
+    workPointer = addValue(workPointer, 10);
     workPointer = addInstructions(workPointer, CONS);
     workPointer = addInstructions(workPointer, LDF);
     workPointer = addCDRList(workPointer, function);

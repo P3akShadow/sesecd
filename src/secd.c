@@ -65,8 +65,9 @@ void stopInstruction(struct sesecd *secd);
 
 void execute(struct sesecd *secd){
 
-if(secd->c->car.instruction == 0) {
-        printf("Error in S-EXPR structure, no instruction in control register");  
+if(secd->c->car.instruction <= 0 || secd->c->car.instruction > 26) {
+        printf("Error in S-EXPR structure, no instruction in control register\n");  
+        printSexpr(secd->c);
         exit(1);
 }
 
@@ -210,7 +211,7 @@ struct sexpr *consII(int car, int cdr){
 void nilInstruction(struct sesecd *secd){
     struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
     nil->type = NILVALUE;
-    nil->cdr = secd->s->cdr;
+    nil->cdr = secd->s;
     secd->s = nil;
     secd->c = secd->c->cdr;
 }
@@ -230,20 +231,28 @@ void ldInstruction(struct sesecd *secd){
     int subList = secd->c->cdr->car.list->car.value;
     int element = secd->c->cdr->car.list->cdr->car.value;
     struct sexpr *environment = secd->e;
+    struct sexpr *functionEnv = secd->e;
     for(int i = 1; i < subList; i++) {
         environment = environment->cdr;
+        functionEnv = functionEnv->cdr;
     }
+    
     environment = environment->car.list;
         for(int i = 1; i < element; i++) {
         environment = environment->cdr;
     }
     if(environment->type == VALUE) {
-    printf("loaded value from env: %d\n", environment->car.value);
+    //printf("loaded value from env: %d\n", environment->car.value);
     secd->s = consIL(environment->car.value, secd->s);
     }
     else if(environment->type == LIST || environment->type == INSTRUCTION) {
-    printf("loaded function from env\n");
-    secd->s = consLL(environment->car.list, secd->s);
+    //printf("loaded function from env. instructions:\n");
+    //printSexpr(environment->car.list->car.list);
+    //printf("\nvariables:\n");
+    //printSexpr(environment->car.list->cdr->cdr->car.list);
+   
+    functionEnv = consLL(environment->car.list->car.list, functionEnv);
+    secd->s = consLL(functionEnv, secd->s);
     }
     else{
         secd->s = consLL(createSexpr(), secd->s);
@@ -437,17 +446,6 @@ void apInstruction(struct sesecd *secd){
         struct sexpr *nil = createSexpr();
         secd->d = consLL(nil, envControlDump);
     }
-    /*
-    if(secd->s->cdr->type != LIST && secd->s->car.list->cdr->type != LIST) {
-        secd->e = consII(secd->s->cdr->car.value, secd->s->car.list->cdr->car.value);
-    } else if (secd->s->car.list->cdr->type!= LIST) {
-        secd->e = consIL(secd->s->cdr->car.value, secd->s->car.list->cdr);
-    } else if (secd->s->type != LIST) {
-        secd->e = consLI(secd->s->cdr->car.list, secd->s->car.list->cdr->car.value);
-    } else {
-        secd->e = consLL(secd->s->cdr->car.list, secd->s->car.list->cdr);
-    }
-    */
 
     secd->e = consLL(secd->s->cdr->car.list, secd->s->car.list->cdr);
     
@@ -472,7 +470,7 @@ void rtnInstruction(struct sesecd *secd){
 void dumInstruction(struct sesecd *secd){
 
     struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
-    nil->type= NILVALUE;
+    nil->type= DUMMY;
     secd->e = consLL(nil, secd->e);
     secd->c = secd->c->cdr;
 }
@@ -490,20 +488,8 @@ void rapInstruction(struct sesecd *secd){
         secd->d = consLL(nil, envControlDump);
     }
 
-    /*
-    if(secd->s->cdr->type != LIST && secd->s->car.list->cdr->cdr->type != LIST) {
-        secd->e = consII(secd->s->cdr->car.value, secd->s->car.list->cdr->cdr->car.value);
-    } else if (secd->s->car.list->cdr->cdr->type != LIST) {
-        secd->e = consIL(secd->s->cdr->car.value, secd->s->car.list->cdr->cdr);
-    } else if (secd->s->type != LIST) {
-        secd->e = consLI(secd->s->cdr->car.list, secd->s->car.list->cdr->cdr->car.value);
-    } else {
-        secd->e = consLL(secd->s->cdr->car.list, secd->s->car.list->cdr->cdr);
-    }
-    */
     secd->e = secd->s->car.list->cdr;
-    // rplaca. replace head of e 
-    secd->e = consLL(secd->s->cdr->car.list, secd->e->cdr);
+    secd->e = rplaca(secd->e, secd->s->cdr);
     secd->c = secd->s->car.list->car.list;
     
     struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
@@ -551,6 +537,12 @@ struct sexpr *createSexpr(){
     car->type = NILVALUE;
     car->car.instruction = NIL;
     return car;
+}
+
+struct sexpr *rplaca(struct sexpr *env, struct sexpr* toBeReplacedWith){
+
+    toBeReplacedWith->cdr=env->cdr;
+    return toBeReplacedWith;
 }
 
 

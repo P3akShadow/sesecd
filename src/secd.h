@@ -35,7 +35,8 @@ typedef enum storedType{
   NILVALUE,
   INSTRUCTION,
   VALUE,
-  LIST
+  LIST,
+  DUMMY
 } storedType;
 
 // Nested list that can contain tree structured data. car is the head and cdr the tail. 
@@ -90,4 +91,6 @@ struct sexpr *createSexpr();
 //prints --a-- representation of the sexpr
 void printSexpr(sexpr* car);
 
+
+struct sexpr *rplaca(struct sexpr *env, struct sexpr* toBeReplacedWith);
 #endif
