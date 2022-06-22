@@ -276,7 +276,7 @@ void consInstruction(struct sesecd *secd){
     secd->c = secd->c->cdr;
 }
 
-void expandFrameOnStack(sesecd *secd){
+void expandRecordOnStack(sesecd *secd){
     sexpr* stop = consIL(STOP, secd->c);
     sexpr* ap = consIL(AP, secd->c);
     secd->c = ap;
@@ -286,14 +286,12 @@ void expandFrameOnStack(sesecd *secd){
     secd->s = consLL(pushedFun, env);
 }
 
-void addInstruction(struct sesecd *secd){
-    if(secd->s->cdr->car.list->type == FUNCTION){
-
-        printf("############################\nreduce second arg\n");
+void calcTosCdr(sesecd *secd){
+     if(secd->s->cdr->car.list->type == FUNCTION){
         sexpr* oldStack = secd->s;
         secd->s = secd->s->cdr;
 
-        expandFrameOnStack(secd);
+        expandRecordOnStack(secd);
         
         for(int i = 0; secd->c->car.instruction != RTN && i < 100; i++){
             execute(secd);
@@ -309,23 +307,15 @@ void addInstruction(struct sesecd *secd){
             printf("\n");
         }
         execute(secd);
-
-        printf("stack before altering:\n");
-        printSexpr(secd->s);
-        printf("\n");
-        
         secd->s = consLL(oldStack->car.list, secd->s);
-        
-        printf("stack after altering:\n");
-        printSexpr(secd->s);
-        printf("\n");
         return;
     }
-    
+}
+
+void calcTos(sesecd *secd){
     if(secd->s->car.list->type == FUNCTION){
-        printf("############################\nreduce first arg\n");
-        expandFrameOnStack(secd);
-        for(int i = 0; i < 100; i++){
+        expandRecordOnStack(secd);
+        for(int i = 0; secd->c->car.instruction != RTN && i < 100; i++){
             execute(secd);
             printf("after %d steps of final evaluation:\ns:\n", ++i);
     
@@ -338,8 +328,14 @@ void addInstruction(struct sesecd *secd){
             printSexpr(secd->d);
             printf("\n");
         }
+        execute(secd);
         return;
     }
+}
+
+void addInstruction(struct sesecd *secd){
+    calcTosCdr(secd);
+    calcTos(secd);
 
     if(secd->s->cdr->car.list->type == CONSTANT && secd->s->car.list->type == CONSTANT){
         int result = secd->s->car.list->car.value + secd->s->cdr->car.list->car.value;
@@ -379,10 +375,15 @@ void leqInstruction(struct sesecd *secd){
 }
 
 void leInstruction(struct sesecd *secd){
+    calcTosCdr(secd);
+    calcTos(secd);
 
     int result = 0;
-    if (secd->s->car.value < secd->s->cdr->car.value) result = 1;
-    secd->s = consIL(result, secd->s->cdr->cdr);
+    //operands must be the other way round, since values are pushed onto the stack as the get consumed
+    if (secd->s->cdr->car.list->car.value < secd->s->car.list->car.value) result = 1;
+    sexpr* container = consIL(result, NULL);
+    container->type = CONSTANT;
+    secd->s = consLL(container, secd->s->cdr->cdr);
     secd->c = secd->c->cdr;
 }
    
@@ -435,7 +436,7 @@ void orInstruction(struct sesecd *secd){
 void selInstruction(struct sesecd *secd){
 
     secd->d = consLL(secd->c->cdr->cdr->cdr, secd->d);
-    if(secd->s->car.value != 0){
+    if(secd->s->car.list->car.value != 0){
         secd->c = secd->c->cdr->car.list;
     } else secd->c = secd->c->cdr->cdr->car.list;
 
@@ -537,7 +538,7 @@ void stopInstruction(struct sesecd *secd) {
     }
 
     printf("Still a function on stack!\nExpanding to show a number\n");
-    expandFrameOnStack(secd);
+    expandRecordOnStack(secd);
 
     for(int i = 0; i < 100; i++){
         execute(secd);

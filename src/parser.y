@@ -17,7 +17,9 @@
 %token <number> NUM_TOK
 %type <subex> Applications
 
-%token MAIN_TOK NEWLINE_TOK DEFINITION_TOK ADD_TOK SUB_TOK EQ_TOK LEQ_TOK LE_TOK GEQ_TOK GE_TOK MUL_TOK DIV_TOK AND_TOK OR_TOK PAROPEN_TOK PARCLOSE_TOK LISTOPEN_TOK LISTCLOSE_TOK
+%token MAIN_TOK NEWLINE_TOK DEFINITION_TOK 
+%token ADD_TOK SUB_TOK EQ_TOK LEQ_TOK LE_TOK GEQ_TOK GE_TOK MUL_TOK DIV_TOK AND_TOK OR_TOK PAROPEN_TOK PARCLOSE_TOK LISTOPEN_TOK LISTCLOSE_TOK
+%token IF_TOK THEN_TOK ELSE_TOK
 
 %left ADD_TOK
 
@@ -25,6 +27,8 @@
     sexpr* mainFun;
     sexpr* currentEnd;
     sexpr* startExpr;
+
+    sexpr* endDump = NULL;
 
     void yyerror();
     int yylex(void);
@@ -36,6 +40,7 @@
     int numOfPars = 0;
     char* definedParams[MAX_PARAMS];
 
+
     void cleanup();
     void genExpr(instruction inst);
     void registerFun(char* name, sexpr* fun);
@@ -44,6 +49,9 @@
     void genExpr(instruction inst);
     void genPushCon(int value);
     void pushExpr(sexpr* expr);
+
+    void makeCodeVert();
+    void makeCodeStraight();
 %}
 
 %%
@@ -70,13 +78,17 @@ Expr: Term
     | Term SUB_TOK Term
     | Term EQ_TOK Term
     | Term LEQ_TOK Term
-    | Term LE_TOK Term
+    | Term LE_TOK Term  {genExpr(LE);}
     | Term GEQ_TOK Term
     | Term GE_TOK Term
     | Term MUL_TOK Term
     | Term DIV_TOK Term
     | Term AND_TOK Term
     | Term OR_TOK Term
+    | IF_TOK 
+        Term THEN_TOK {genExpr(SEL);makeCodeVert();}
+        Term ELSE_TOK {makeCodeStraight();makeCodeVert();}
+        Term {makeCodeStraight();}
     ;
 
 Term : NUM_TOK {genPushCon($1);}
@@ -250,4 +262,27 @@ void pushExpr(sexpr* expr){
 
     currentEnd->cdr = loader;
     currentEnd = content;
+}
+
+void makeCodeStraight(){
+    currentEnd->cdr = createSexpr();
+    currentEnd->cdr->car.instruction = JOIN;
+
+    currentEnd = endDump;
+    endDump = endDump->cdr;
+}
+
+void makeCodeVert(){
+    //create new end and register it
+    currentEnd->cdr = createSexpr();
+    currentEnd = currentEnd->cdr;
+
+    //register end endDump
+    currentEnd->cdr = endDump;
+    endDump = currentEnd;
+
+    //create the vertical list, and register it as new end
+    currentEnd->car.list = createSexpr();
+    currentEnd->car.list->car.instruction = NIL;
+    currentEnd = currentEnd->car.list;
 }

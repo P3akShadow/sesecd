@@ -28,6 +28,9 @@ negnumber -[\t ]*[0-9][0-9]*
 newline \n
 
 main main
+if if
+then then
+else else
 varid [a-z][a-z|A-Z|0-9|\_|\']*
 
 guard \n[\t ]*\|
@@ -47,6 +50,10 @@ invalid .
 {mul} {}
 {div} {}
 {and} {}
+
+{if} {return IF_TOK;}
+{else} {return ELSE_TOK;}
+{then} {return THEN_TOK;}
 
 {paropen} {return PAROPEN_TOK;}
 {parclose} {return PARCLOSE_TOK;}
