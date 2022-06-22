@@ -41,10 +41,8 @@
     void registerFun(char* name, sexpr* fun);
     void registerParam(char* name);
     void loadFun(char* name);
-    sexpr* argumentAdd(sexpr* rawFun, sexpr* argument);
     void genExpr(instruction inst);
     void genPushCon(int value);
-    void functionCall(sexpr* calledFunction);
     void pushExpr(sexpr* expr);
 %}
 
@@ -242,25 +240,6 @@ void genExpr(instruction inst){
     currentEnd = inExpr;
 }
 
-sexpr* argumentAdd(sexpr* rawFun, sexpr* argument){
-    sexpr* env = rawFun->cdr->car.list;
-    sexpr* fun = rawFun->cdr->cdr;
-
-    sexpr* newElem = createSexpr();
-    newElem->car = argument->car;
-    newElem->cdr = env;
-
-    sexpr* newRoot = createSexpr();
-    newRoot->car.list = newElem;
-    newRoot->cdr = fun;
-
-    sexpr* newType = createSexpr();
-    newType->car.instruction = FUNCTION;
-    newType->cdr = newRoot;
-
-    return newType;
-}
-
 void pushExpr(sexpr* expr){
     sexpr* content = createSexpr();
     content->car.list = expr;
@@ -271,33 +250,4 @@ void pushExpr(sexpr* expr){
 
     currentEnd->cdr = loader;
     currentEnd = content;
-}
-
-void functionCall(sexpr* callRecord){
-    sexpr* env = callRecord->cdr->car.list;
-    sexpr* calledFunction = callRecord->cdr->cdr;
-
-    sexpr* loadEnv = createSexpr();
-    loadEnv->car.instruction = LDC;
-
-    sexpr* constructedEnv = createSexpr();
-    constructedEnv->car.list = env;
-
-    sexpr* loadExpr = createSexpr();
-    loadExpr->car.instruction = LDF;
-
-    sexpr* loadFun = createSexpr();
-    loadFun->car.list = calledFunction;
-    
-    sexpr* apFun = createSexpr();
-    apFun->car.instruction = AP;
-    apFun->cdr = NULL;
-
-    loadEnv->cdr = constructedEnv;
-    constructedEnv->cdr = loadExpr;
-    loadExpr->cdr = loadFun;
-    loadFun->cdr = apFun;
-
-    currentEnd->cdr = loadEnv;
-    currentEnd = apFun;
 }
