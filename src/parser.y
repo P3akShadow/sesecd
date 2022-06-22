@@ -61,9 +61,8 @@ Program : /*nothing*/ {cleanup();}
     ;
 
 Def : MAIN_TOK DEFINITION_TOK Expr NEWLINE_TOK {genExpr(STOP); mainFun = startExpr;}
-    | ID_TOK Pars DEFINITION_TOK Expr NEWLINE_TOK {
+    | ID_TOK {registerFun($1,startExpr);} Pars DEFINITION_TOK Expr NEWLINE_TOK {
         genExpr(RTN);
-        registerFun($1, startExpr);
         printSexpr(startExpr);
         printf("\n");
         numOfPars = 0;}
@@ -75,13 +74,13 @@ Pars : /*nothing*/
 
 Expr: Term
     | Term ADD_TOK Term {genExpr(ADD);}
-    | Term SUB_TOK Term
+    | Term SUB_TOK Term {genExpr(SUB);}
     | Term EQ_TOK Term
     | Term LEQ_TOK Term
     | Term LE_TOK Term  {genExpr(LE);}
     | Term GEQ_TOK Term
     | Term GE_TOK Term
-    | Term MUL_TOK Term
+    | Term MUL_TOK Term {genExpr(MUL);}
     | Term DIV_TOK Term
     | Term AND_TOK Term
     | Term OR_TOK Term
@@ -97,10 +96,13 @@ Term : NUM_TOK {genPushCon($1);}
     ;
 
 Applications : ID_TOK {loadFun($1);}
-    | Applications ID_TOK {loadFun($2);genExpr(SPECPAR);}
-    | Applications NUM_TOK {genPushCon($2);genExpr(SPECPAR);}
+    | Applications Apex {genExpr(SPECPAR);}
     ;
 
+Apex: ID_TOK {loadFun($1);}
+    | NUM_TOK {genPushCon($1);}
+    | PAROPEN_TOK Expr PARCLOSE_TOK
+    ;
 %%
 
 void yyerror(void){

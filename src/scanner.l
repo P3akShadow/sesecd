@@ -41,13 +41,13 @@ invalid .
 {definition} {return DEFINITION_TOK;}
 {add} {return ADD_TOK;}
 {or} {}
-{sub} {}
+{sub} {printf("found sub\n");return SUB_TOK;}
 {eq} {}
 {leq} {}
 {le} {return LE_TOK;}
 {geq} {}
 {ge} {}
-{mul} {}
+{mul} {printf("found mul\n"); return MUL_TOK;}
 {div} {}
 {and} {}
 
@@ -61,7 +61,7 @@ invalid .
 {listopen} {}
 {listclose} {}
 
-{comment} {}
+{comment} {printf("found comment\n");}
 {whitespace} {}
 
 {number} {yylval.number = atoi(yytext); return NUM_TOK;}

@@ -351,10 +351,20 @@ void addInstruction(struct sesecd *secd){
 }
 
 void subInstruction(struct sesecd *secd){
+    calcTosCdr(secd);
+    calcTos(secd);
 
-    int result = secd->s->car.value - secd->s->cdr->car.value;
-    secd->s = consIL(result, secd->s->cdr->cdr);
-    secd->c = secd->c->cdr;
+    if(secd->s->cdr->car.list->type == CONSTANT && secd->s->car.list->type == CONSTANT){
+        int result = secd->s->cdr->car.list->car.value - secd->s->car.list->car.value;
+        sexpr* valCont = consIL(result, NULL);
+        valCont->type = CONSTANT;
+        secd->s = consLL(valCont, secd->s->cdr->cdr);
+        secd->c = secd->c->cdr;
+        return;
+    }
+
+    printf("type on stack unknown (%d, %d), abort\n", secd->s->car.list->type, secd->s->cdr->car.list->type);
+    exit(1);
 }
 
 void eqInstruction(struct sesecd *secd){
