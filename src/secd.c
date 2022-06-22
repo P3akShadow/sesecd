@@ -277,6 +277,7 @@ void consInstruction(struct sesecd *secd){
 }
 
 void expandFrameOnStack(sesecd *secd){
+    sexpr* stop = consIL(STOP, secd->c);
     sexpr* ap = consIL(AP, secd->c);
     secd->c = ap;
 
@@ -287,12 +288,14 @@ void expandFrameOnStack(sesecd *secd){
 
 void addInstruction(struct sesecd *secd){
     if(secd->s->cdr->car.list->type == FUNCTION){
+
+        printf("############################\nreduce second arg\n");
         sexpr* oldStack = secd->s;
         secd->s = secd->s->cdr;
 
         expandFrameOnStack(secd);
         
-        for(int i = 0; i < 100; i++){
+        for(int i = 0; secd->c->car.instruction != RTN && i < 100; i++){
             execute(secd);
             printf("after %d steps of final evaluation:\ns:\n", ++i);
     
@@ -305,12 +308,22 @@ void addInstruction(struct sesecd *secd){
             printSexpr(secd->d);
             printf("\n");
         }
+        execute(secd);
+
+        printf("stack before altering:\n");
+        printSexpr(secd->s);
+        printf("\n");
         
         secd->s = consLL(oldStack->car.list, secd->s);
+        
+        printf("stack after altering:\n");
+        printSexpr(secd->s);
+        printf("\n");
         return;
     }
     
     if(secd->s->car.list->type == FUNCTION){
+        printf("############################\nreduce first arg\n");
         expandFrameOnStack(secd);
         for(int i = 0; i < 100; i++){
             execute(secd);
@@ -328,13 +341,17 @@ void addInstruction(struct sesecd *secd){
         return;
     }
 
-    if(secd->s->cdr->car.list->type == CONSTANT || secd->s->car.list->type == CONSTANT){
+    if(secd->s->cdr->car.list->type == CONSTANT && secd->s->car.list->type == CONSTANT){
         int result = secd->s->car.list->car.value + secd->s->cdr->car.list->car.value;
         sexpr* valCont = consIL(result, NULL);
         valCont->type = CONSTANT;
         secd->s = consLL(valCont, secd->s->cdr->cdr);
         secd->c = secd->c->cdr;
+        return;
     }
+
+    printf("type on stack unknown (%d, %d), abort\n", secd->s->car.list->type, secd->s->cdr->car.list->type);
+    exit(1);
 }
 
 void subInstruction(struct sesecd *secd){
@@ -535,8 +552,9 @@ void stopInstruction(struct sesecd *secd) {
         printSexpr(secd->d);
         printf("\n");
     }
-
+ 
     exit(0);
+     
 }
 
 void specparInstruction(sesecd *secd) {
@@ -584,7 +602,11 @@ void printSexpr(sexpr* car){
         printf("NULL");
         return;
     }
-    printf("{car:%d, cdr:", car->car.value);
+    printf("{car:%d", car->car.value);
+    if(car->car.value > 1000 || car->car.value < -1000){
+        if(car->car.list->type == CONSTANT){printf("(containing con %d)", car->car.list->car.value);}
+    }
+    printf(", cdr:");
     printSexpr(car->cdr);
     printf("}");
 }
