@@ -41,7 +41,7 @@ invalid .
 {sub} {}
 {eq} {}
 {leq} {}
-{le} {return LE_TOK}
+{le} {return LE_TOK;}
 {geq} {}
 {ge} {}
 {mul} {}
