@@ -24,7 +24,7 @@ listclose \]
 comment --.*
 whitespace [\t ]+
 number  [0-9][0-9]*
-negnumber -[\t ]*[0-9][0-9]*
+negnumber \{-[0-9][0-9]*\}
 newline \n
 
 main main
