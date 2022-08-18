@@ -7,8 +7,6 @@
 #define MAX_FUN 1000
 #define MAX_PARAMS 100
 
-#define FUNCITON 0
-#define CONSTANT 1
 %}
 
 %union {unsigned long number; char* id; void* subex;}
@@ -19,7 +17,9 @@
 %token <number> NUM_TOK
 %type <subex> Applications
 
-%token MAIN_TOK DEFINITION_TOK ADD_TOK SUB_TOK EQ_TOK LEQ_TOK LE_TOK GEQ_TOK GE_TOK MUL_TOK DIV_TOK AND_TOK OR_TOK PAROPEN_TOK PARCLOSE_TOK LISTOPEN_TOK LISTCLOSE_TOK
+%token MAIN_TOK NEWLINE_TOK DEFINITION_TOK 
+%token ADD_TOK SUB_TOK EQ_TOK LEQ_TOK LE_TOK GEQ_TOK GE_TOK MUL_TOK DIV_TOK AND_TOK OR_TOK PAROPEN_TOK PARCLOSE_TOK LISTOPEN_TOK LISTCLOSE_TOK
+%token IF_TOK THEN_TOK ELSE_TOK
 
 %left ADD_TOK
 
@@ -27,6 +27,8 @@
     sexpr* mainFun;
     sexpr* currentEnd;
     sexpr* startExpr;
+
+    sexpr* endDump = NULL;
 
     void yyerror();
     int yylex(void);
@@ -38,15 +40,18 @@
     int numOfPars = 0;
     char* definedParams[MAX_PARAMS];
 
+
     void cleanup();
     void genExpr(instruction inst);
     void registerFun(char* name, sexpr* fun);
     void registerParam(char* name);
-    sexpr* findFun(char* name);
-    sexpr* argumentAdd(sexpr* rawFun, sexpr* argument);
+    void loadFun(char* name);
     void genExpr(instruction inst);
     void genPushCon(int value);
-    void functionCall(sexpr* calledFunction);
+    void pushExpr(sexpr* expr);
+
+    void makeCodeVert();
+    void makeCodeStraight();
 %}
 
 %%
@@ -55,11 +60,11 @@ Program : /*nothing*/ {cleanup();}
     | Program Def {cleanup();}
     ;
 
-Def : MAIN_TOK DEFINITION_TOK Expr {genExpr(STOP); mainFun = startExpr;}
-    | ID_TOK Pars DEFINITION_TOK Expr {
+Def : MAIN_TOK DEFINITION_TOK Expr NEWLINE_TOK {genExpr(STOP); mainFun = startExpr;}
+    | ID_TOK {registerFun($1,startExpr);} Pars DEFINITION_TOK Expr NEWLINE_TOK {
         genExpr(RTN);
-        registerFun($1, startExpr);
         printSexpr(startExpr);
+        printf("\n");
         numOfPars = 0;}
     ;
 
@@ -69,27 +74,35 @@ Pars : /*nothing*/
 
 Expr: Term
     | Term ADD_TOK Term {genExpr(ADD);}
-    | Term SUB_TOK Term
+    | Term SUB_TOK Term {genExpr(SUB);}
     | Term EQ_TOK Term
     | Term LEQ_TOK Term
-    | Term LE_TOK Term
+    | Term LE_TOK Term  {genExpr(LE);}
     | Term GEQ_TOK Term
     | Term GE_TOK Term
-    | Term MUL_TOK Term
+    | Term MUL_TOK Term {genExpr(MUL);}
     | Term DIV_TOK Term
     | Term AND_TOK Term
     | Term OR_TOK Term
+    | IF_TOK 
+        Term THEN_TOK {genExpr(SEL);makeCodeVert();}
+        Term ELSE_TOK {makeCodeStraight();makeCodeVert();}
+        Term {makeCodeStraight();}
     ;
 
 Term : NUM_TOK {genPushCon($1);}
-    | Applications {functionCall($1);}
+    | Applications 
     | PAROPEN_TOK Expr PARCLOSE_TOK
     ;
 
-Applications : ID_TOK {$$ = findFun($1);}
-    | Applications ID_TOK {$$ = argumentAdd($1, findFun($2));}
+Applications : ID_TOK {loadFun($1);}
+    | Applications Apex {genExpr(SPECPAR);}
     ;
 
+Apex: ID_TOK {loadFun($1);}
+    | NUM_TOK {genPushCon($1);}
+    | PAROPEN_TOK Expr PARCLOSE_TOK
+    ;
 %%
 
 void yyerror(void){
@@ -154,47 +167,59 @@ void cleanup(){
 void registerFun(char* name, sexpr* fun){
     definedFunctionNames[numOfFunctions] = name;
 
-    sexpr* type = createSexpr();
-    type->car.value = FUNCITON;
+    sexpr* env = createSexpr();
+    env->car.list = NULL;
+    env->cdr = NULL;
 
-    sexpr* base = createSexpr();
-    base->car.list = createSexpr();
-    base->car.list->car.list = NULL;
-    base->car.list->cdr = NULL;
-    base->cdr = fun;
+    sexpr* root = createSexpr();
+    root->type = FUNCTION;
+    root->car.list = env;
+    root->cdr = fun;
 
-    type->cdr = base;
-    definedFunctions[numOfFunctions++] = type;
+    printf("written fun %s on root %d\n", name, root);
+    
+    definedFunctions[numOfFunctions++] = root;
 }
 
 void registerParam(char* name){
     definedParams[numOfPars++] = name;
 }
 
-sexpr* findFun(char* name){
+void loadFun(char* name){
     for(int i = 0; i < numOfPars; i++){
         if(!strcmp(name, definedParams[i])){
             sexpr* locp = createSexpr();
-            locp->car.value = (numOfPars -i) + 1;
+            locp->car.value = (numOfPars - i);
 
             sexpr* locl = createSexpr();
             locl->car.value = 1;
             locl->cdr = locp;
 
+            sexpr* container = createSexpr();
+            container->car.list = locl;
+
             sexpr* ldInst = createSexpr();
-            ldInst->car.list = locl;
+            ldInst->car.instruction = LD;
+            ldInst->cdr = container;
 
-            sexpr* type = createSexpr();//da müsst man halt function oder con rein tun können
-            type->car.value = CONSTANT;
-            type->cdr=ldInst;
-
-            return type;
+            currentEnd->cdr = ldInst;
+            currentEnd = container;
+            return;
         }
     }
 
     for(int i = 0; i < numOfFunctions; i++){
         if(!strcmp(name, definedFunctionNames[i])){
-            return definedFunctions[i];
+            sexpr* container = createSexpr();
+            container->car.list = definedFunctions[i];
+
+            sexpr* loader = createSexpr();
+            loader->car.instruction = LDC;
+            loader->cdr = container;
+
+            currentEnd->cdr = loader;
+            currentEnd = container;
+            return;
         }
     }
 
@@ -204,17 +229,20 @@ sexpr* findFun(char* name){
 }
 
 void genPushCon(int con){
-    sexpr* loader = createSexpr();
-    loader->car.instruction = LDC;
-
     sexpr* value = createSexpr();
+    value->type = CONSTANT;
     value->car.value = con;
     value->cdr = NULL;
 
-    loader->cdr = value;
+    sexpr* container = createSexpr();
+    container->car.list = value;
+
+    sexpr* loader = createSexpr();
+    loader->car.instruction = LDC;
+    loader->cdr = container;
 
     currentEnd->cdr = loader;
-    currentEnd = value;
+    currentEnd = container;
 }
 
 void genExpr(instruction inst){
@@ -226,55 +254,37 @@ void genExpr(instruction inst){
     currentEnd = inExpr;
 }
 
-sexpr* argumentAdd(sexpr* rawFun, sexpr* argument){
-    sexpr* env = rawFun->cdr->car.list;
-    sexpr* fun = rawFun->cdr->cdr;
+void pushExpr(sexpr* expr){
+    sexpr* content = createSexpr();
+    content->car.list = expr;
 
-    sexpr* newElem = createSexpr();
-    newElem->car = argument->car;
-    newElem->cdr = env;
+    sexpr* loader = createSexpr();
+    loader->car.value = LDC;
+    loader->cdr = content;
 
-    sexpr* newRoot = createSexpr();
-    newRoot->car.list = newElem;
-    newRoot->cdr = fun;
-
-    sexpr* newType = createSexpr();
-    newType->car.value = FUNCITON;
-    newType->cdr = newRoot;
-
-    return newType;
+    currentEnd->cdr = loader;
+    currentEnd = content;
 }
 
-void functionCall(sexpr* callRecord){
-    if(callRecord->car.value == CONSTANT){
-        genPushCon(callRecord->cdr->car.value);
-        return;
-    }
+void makeCodeStraight(){
+    currentEnd->cdr = createSexpr();
+    currentEnd->cdr->car.instruction = JOIN;
 
-    sexpr* env = callRecord->cdr->car.list;
-    sexpr* calledFunction = callRecord->cdr->cdr;
+    currentEnd = endDump;
+    endDump = endDump->cdr;
+}
 
-    sexpr* loadEnv = createSexpr();
-    loadEnv->car.instruction = LDC;
+void makeCodeVert(){
+    //create new end and register it
+    currentEnd->cdr = createSexpr();
+    currentEnd = currentEnd->cdr;
 
-    sexpr* constructedEnv = createSexpr();
-    constructedEnv->car.list = env;
+    //register end endDump
+    currentEnd->cdr = endDump;
+    endDump = currentEnd;
 
-    sexpr* loadExpr = createSexpr();
-    loadExpr->car.instruction = LDF;
-
-    sexpr* loadFun = createSexpr();
-    loadFun->car.list = calledFunction;
-    
-    sexpr* apFun = createSexpr();
-    apFun->car.instruction = AP;
-    apFun->cdr = NULL;
-
-    loadEnv->cdr = constructedEnv;
-    constructedEnv->cdr = loadExpr;
-    loadExpr->cdr = loadFun;
-    loadFun->cdr = apFun;
-
-    currentEnd->cdr = loadEnv;
-    currentEnd = apFun;
+    //create the vertical list, and register it as new end
+    currentEnd->car.list = createSexpr();
+    currentEnd->car.list->car.instruction = NIL;
+    currentEnd = currentEnd->car.list;
 }
