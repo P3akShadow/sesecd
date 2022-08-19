@@ -334,6 +334,7 @@ void calcTos(sesecd *secd){
 }
 
 void addInstruction(struct sesecd *secd){
+    //these two functions make sure that there are just values on the top of the stack and the next part of the stack
     calcTosCdr(secd);
     calcTos(secd);
 
@@ -351,6 +352,7 @@ void addInstruction(struct sesecd *secd){
 }
 
 void subInstruction(struct sesecd *secd){
+    //these two functions make sure that there are just values on the top of the stack and the next part of the stack
     calcTosCdr(secd);
     calcTos(secd);
 
@@ -368,79 +370,170 @@ void subInstruction(struct sesecd *secd){
 }
 
 void eqInstruction(struct sesecd *secd){
+    //these two functions make sure that there are just values on the top of the stack and the next part of the stack
+    calcTosCdr(secd);
+    calcTos(secd);
 
-    int result = 0;
-    if (secd->s->car.value == secd->s->cdr->car.value) result = 1;
-    secd->s = consIL(result, secd->s->cdr->cdr);
-    secd->c = secd->c->cdr;
+    if(secd->s->cdr->car.list->type == CONSTANT && secd->s->car.list->type == CONSTANT){
+        int result = secd->s->car.list->car.value == secd->s->cdr->car.list->car.value;
+        sexpr* valCont = consIL(result, NULL);
+        valCont->type = CONSTANT;
+        secd->s = consLL(valCont, secd->s->cdr->cdr);
+        secd->c = secd->c->cdr;
+        return;
+    }
+
+    printf("type on stack unknown (%d, %d), abort\n", secd->s->car.list->type, secd->s->cdr->car.list->type);
+    exit(1);
 }
 
 
 void leqInstruction(struct sesecd *secd){
-
-    int result = 0;
-    if (secd->s->car.value <= secd->s->cdr->car.value) result = 1;
-    secd->s = consIL(result, secd->s->cdr->cdr);
-    secd->c = secd->c->cdr;
-}
-
-void leInstruction(struct sesecd *secd){
+    //these two functions make sure that there are just values on the top of the stack and the next part of the stack
     calcTosCdr(secd);
     calcTos(secd);
 
-    int result = 0;
-    //operands must be the other way round, since values are pushed onto the stack as the get consumed
-    if (secd->s->cdr->car.list->car.value < secd->s->car.list->car.value) result = 1;
-    sexpr* container = consIL(result, NULL);
-    container->type = CONSTANT;
-    secd->s = consLL(container, secd->s->cdr->cdr);
-    secd->c = secd->c->cdr;
+    if(secd->s->cdr->car.list->type == CONSTANT && secd->s->car.list->type == CONSTANT){
+        //other way round, since the second element of the stack is the defining one
+        int result = secd->s->car.list->car.value >= secd->s->cdr->car.list->car.value;
+        sexpr* valCont = consIL(result, NULL);
+        valCont->type = CONSTANT;
+        secd->s = consLL(valCont, secd->s->cdr->cdr);
+        secd->c = secd->c->cdr;
+        return;
+    }
+
+    printf("type on stack unknown (%d, %d), abort\n", secd->s->car.list->type, secd->s->cdr->car.list->type);
+    exit(1);
+}
+
+void leInstruction(struct sesecd *secd){
+    //these two functions make sure that there are just values on the top of the stack and the next part of the stack
+    calcTosCdr(secd);
+    calcTos(secd);
+
+    if(secd->s->cdr->car.list->type == CONSTANT && secd->s->car.list->type == CONSTANT){
+        //other way round, since the second element of the stack is the defining one
+        int result = secd->s->car.list->car.value > secd->s->cdr->car.list->car.value;
+        sexpr* valCont = consIL(result, NULL);
+        valCont->type = CONSTANT;
+        secd->s = consLL(valCont, secd->s->cdr->cdr);
+        secd->c = secd->c->cdr;
+        return;
+    }
+
+    printf("type on stack unknown (%d, %d), abort\n", secd->s->car.list->type, secd->s->cdr->car.list->type);
+    exit(1);
 }
    
 void geqInstruction(struct sesecd *secd){
+    //these two functions make sure that there are just values on the top of the stack and the next part of the stack
+    calcTosCdr(secd);
+    calcTos(secd);
 
-    int result = 0;
-    if (secd->s->car.value >= secd->s->cdr->car.value) result = 1;
-    secd->s = consIL(result, secd->s->cdr->cdr);
-    secd->c = secd->c->cdr;
+    if(secd->s->cdr->car.list->type == CONSTANT && secd->s->car.list->type == CONSTANT){
+        //other way round, since the second element of the stack is the defining one
+        int result = secd->s->car.list->car.value <= secd->s->cdr->car.list->car.value;
+        sexpr* valCont = consIL(result, NULL);
+        valCont->type = CONSTANT;
+        secd->s = consLL(valCont, secd->s->cdr->cdr);
+        secd->c = secd->c->cdr;
+        return;
+    }
+
+    printf("type on stack unknown (%d, %d), abort\n", secd->s->car.list->type, secd->s->cdr->car.list->type);
+    exit(1);
 }
 
 void geInstruction(struct sesecd *secd){
+    //these two functions make sure that there are just values on the top of the stack and the next part of the stack
+    calcTosCdr(secd);
+    calcTos(secd);
 
-    int result = 0;
-    if (secd->s->car.value > secd->s->cdr->car.value) result = 1;    
-    secd->s = consIL(result, secd->s->cdr->cdr);
-    secd->c = secd->c->cdr;
+    if(secd->s->cdr->car.list->type == CONSTANT && secd->s->car.list->type == CONSTANT){
+        //other way round, since the second element of the stack is the defining one
+        int result = secd->s->car.list->car.value < secd->s->cdr->car.list->car.value;
+        sexpr* valCont = consIL(result, NULL);
+        valCont->type = CONSTANT;
+        secd->s = consLL(valCont, secd->s->cdr->cdr);
+        secd->c = secd->c->cdr;
+        return;
+    }
+
+    printf("type on stack unknown (%d, %d), abort\n", secd->s->car.list->type, secd->s->cdr->car.list->type);
+    exit(1);
 }
 
 void mulInstruction(struct sesecd *secd){
+    //these two functions make sure that there are just values on the top of the stack and the next part of the stack
+    calcTosCdr(secd);
+    calcTos(secd);
 
-    int result = secd->s->car.value * secd->s->cdr->car.value;
-    secd->s = consIL(result, secd->s->cdr->cdr);
-    secd->c = secd->c->cdr;
+    if(secd->s->cdr->car.list->type == CONSTANT && secd->s->car.list->type == CONSTANT){
+        int result = secd->s->car.list->car.value * secd->s->cdr->car.list->car.value;
+        sexpr* valCont = consIL(result, NULL);
+        valCont->type = CONSTANT;
+        secd->s = consLL(valCont, secd->s->cdr->cdr);
+        secd->c = secd->c->cdr;
+        return;
+    }
+
+    printf("type on stack unknown (%d, %d), abort\n", secd->s->car.list->type, secd->s->cdr->car.list->type);
+    exit(1);
 }
 
 void divInstruction(struct sesecd *secd){
+    //these two functions make sure that there are just values on the top of the stack and the next part of the stack
+    calcTosCdr(secd);
+    calcTos(secd);
 
-    int result = secd->s->car.value / secd->s->cdr->car.value;
-    secd->s = consIL(result, secd->s->cdr->cdr);
-    secd->c = secd->c->cdr;
+    if(secd->s->cdr->car.list->type == CONSTANT && secd->s->car.list->type == CONSTANT){
+        int result = secd->s->car.list->car.value / secd->s->cdr->car.list->car.value;
+        sexpr* valCont = consIL(result, NULL);
+        valCont->type = CONSTANT;
+        secd->s = consLL(valCont, secd->s->cdr->cdr);
+        secd->c = secd->c->cdr;
+        return;
+    }
+
+    printf("type on stack unknown (%d, %d), abort\n", secd->s->car.list->type, secd->s->cdr->car.list->type);
+    exit(1);
 }
 
 void andInstruction(struct sesecd *secd){
-    
-    int result = 0;
-    if (secd->s->car.value != 0 && secd->s->cdr->car.value != 0) result = 1;
-    secd->s = consIL(result, secd->s->cdr->cdr);
-    secd->c = secd->c->cdr;
+    //these two functions make sure that there are just values on the top of the stack and the next part of the stack
+    calcTosCdr(secd);
+    calcTos(secd);
+
+    if(secd->s->cdr->car.list->type == CONSTANT && secd->s->car.list->type == CONSTANT){
+        int result = secd->s->car.list->car.value && secd->s->cdr->car.list->car.value;
+        sexpr* valCont = consIL(result, NULL);
+        valCont->type = CONSTANT;
+        secd->s = consLL(valCont, secd->s->cdr->cdr);
+        secd->c = secd->c->cdr;
+        return;
+    }
+
+    printf("type on stack unknown (%d, %d), abort\n", secd->s->car.list->type, secd->s->cdr->car.list->type);
+    exit(1);
 }
 
 void orInstruction(struct sesecd *secd){
+    //these two functions make sure that there are just values on the top of the stack and the next part of the stack
+    calcTosCdr(secd);
+    calcTos(secd);
 
-    int result = 0;
-    if (secd->s->car.value != 0 || secd->s->cdr->car.value != 0) result = 1;
-    secd->s = consIL(result, secd->s->cdr->cdr);
-    secd->c = secd->c->cdr;
+    if(secd->s->cdr->car.list->type == CONSTANT && secd->s->car.list->type == CONSTANT){
+        int result = secd->s->car.list->car.value || secd->s->cdr->car.list->car.value;
+        sexpr* valCont = consIL(result, NULL);
+        valCont->type = CONSTANT;
+        secd->s = consLL(valCont, secd->s->cdr->cdr);
+        secd->c = secd->c->cdr;
+        return;
+    }
+
+    printf("type on stack unknown (%d, %d), abort\n", secd->s->car.list->type, secd->s->cdr->car.list->type);
+    exit(1);
 }
 
 void selInstruction(struct sesecd *secd){

@@ -75,15 +75,15 @@ Pars : /*nothing*/
 Expr: Term
     | Term ADD_TOK Term {genExpr(ADD);}
     | Term SUB_TOK Term {genExpr(SUB);}
-    | Term EQ_TOK Term
-    | Term LEQ_TOK Term
+    | Term EQ_TOK Term {genExpr(EQ);}
+    | Term LEQ_TOK Term {genExpr(LEQ);}
     | Term LE_TOK Term  {genExpr(LE);}
-    | Term GEQ_TOK Term
-    | Term GE_TOK Term
+    | Term GEQ_TOK Term {genExpr(GEQ);}
+    | Term GE_TOK Term {genExpr(GE);}
     | Term MUL_TOK Term {genExpr(MUL);}
-    | Term DIV_TOK Term
-    | Term AND_TOK Term
-    | Term OR_TOK Term
+    | Term DIV_TOK Term {genExpr(DIV);}
+    | Term AND_TOK Term {genExpr(AND);}
+    | Term OR_TOK Term {genExpr(OR);}
     | IF_TOK 
         Term THEN_TOK {genExpr(SEL);makeCodeVert();}
         Term ELSE_TOK {makeCodeStraight();makeCodeVert();}
