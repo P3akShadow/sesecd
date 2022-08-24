@@ -40,16 +40,16 @@ invalid .
 %%
 {definition} {return DEFINITION_TOK;}
 {add} {return ADD_TOK;}
-{or} {}
-{sub} {printf("found sub\n");return SUB_TOK;}
-{eq} {}
-{leq} {}
+{sub} {return SUB_TOK;}
+{eq} {return EQ_TOK;}
+{leq} {return LEQ_TOK;}
 {le} {return LE_TOK;}
-{geq} {}
-{ge} {}
-{mul} {printf("found mul\n"); return MUL_TOK;}
-{div} {}
-{and} {}
+{geq} {return GEQ_TOK;}
+{ge} {return GE_TOK;}
+{mul} {return MUL_TOK;}
+{div} {printf("found div\n"); return DIV_TOK;}
+{and} {return AND_TOK;}
+{or} {return OR_TOK;}
 
 {if} {return IF_TOK;}
 {else} {return ELSE_TOK;}
