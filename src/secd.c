@@ -717,6 +717,9 @@ void specparInstruction(sesecd *secd) {
 }
 
 void mapInstruction(sesecd *secd){
+    //the list in the cdr can not be a function
+    calcTosCdr(secd);
+
     //this is the function that needs to be mapped (here, the function is in the first place)
     printf("map instruction detected\n");
     sexpr* functionArg = secd->s->car.list;
