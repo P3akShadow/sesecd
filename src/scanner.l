@@ -20,6 +20,7 @@ paropen \(
 parclose \)
 listopen \[
 listclose \]
+listsep ,
 
 comment --.*
 whitespace [\t ]+
@@ -47,7 +48,7 @@ invalid .
 {geq} {return GEQ_TOK;}
 {ge} {return GE_TOK;}
 {mul} {return MUL_TOK;}
-{div} {printf("found div\n"); return DIV_TOK;}
+{div} {return DIV_TOK;}
 {and} {return AND_TOK;}
 {or} {return OR_TOK;}
 
@@ -58,8 +59,9 @@ invalid .
 {paropen} {return PAROPEN_TOK;}
 {parclose} {return PARCLOSE_TOK;}
 
-{listopen} {}
-{listclose} {}
+{listopen} {return LISTOPEN_TOK;}
+{listclose} {return LISTCLOSE_TOK;}
+{listsep} {return LISTSEP_TOK;}
 
 {comment} {printf("found comment\n");}
 {whitespace} {}
