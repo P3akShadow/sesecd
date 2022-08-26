@@ -31,13 +31,15 @@ typedef enum instruction{
     STOP,
 
     SPECPAR,
+    MAP,
     /*FUNCTION,
     CONSTANT*/
 } instruction;
 
 typedef enum typeInfo{
   FUNCTION,
-  CONSTANT
+  CONSTANT,
+  LIST
 } typeInfo;
 
 

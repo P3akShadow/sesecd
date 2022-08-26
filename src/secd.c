@@ -64,6 +64,7 @@ void rapInstruction(struct sesecd *secd);
 void stopInstruction(struct sesecd *secd);
 
 void specparInstruction(sesecd *secd);
+void mapInstruction(sesecd *secd);
 
 void execute(struct sesecd *secd){
 
@@ -156,6 +157,8 @@ switch(secd->c->car.instruction) {
     case SPECPAR:
         specparInstruction(secd);
         break;
+    case MAP:
+        mapInstruction(secd);
     }
 }
 
@@ -640,6 +643,46 @@ void stopInstruction(struct sesecd *secd) {
         exit(0);
     }
 
+    if(secd->s->car.list->type == LIST){
+        printf("Result: List\n");
+
+        sexpr* element = secd->s->car.list->cdr;
+
+        int results[1000];
+        int numOfElems = 0;
+
+        while(element != NULL && numOfElems < 1000){
+            if(element->type == CONSTANT){
+                results[numOfElems] = element->car.list->car.value;
+            }
+
+            else if (element->type == FUNCTION){
+                //setup secd to evaluate the function
+                secd->s = consLL(element->car.list, secd->s);
+                secd->c = consIL(AP, secd->c);
+                secd->c = consIL(LDF, secd->c);
+
+                while(secd->s->car.list->type == FUNCTION){
+                    calcTos(secd);
+                }
+
+                results[numOfElems] = secd->s->car.list->car.value;
+                secd->s = secd->s->cdr;
+            }
+
+            numOfElems++;
+            element = element->cdr;
+        }
+
+        for(int i = 0; i < numOfElems; i ++){
+            printf("%d, ", results[i]);
+        }
+
+        printf("\n");
+
+        exit(0);
+    }
+
     printf("Still a function on stack!\nExpanding to show a number\n");
     expandRecordOnStack(secd);
 
@@ -671,6 +714,43 @@ void specparInstruction(sesecd *secd) {
     newRoot->type = FUNCTION;
     secd->s = consLL(newRoot, secd->s->cdr->cdr);
     secd->c = secd->c->cdr;
+}
+
+void mapInstruction(sesecd *secd){
+    //the list in the cdr can not be a function
+    calcTosCdr(secd);
+
+    //this is the function that needs to be mapped (here, the function is in the first place)
+    printf("map instruction detected\n");
+    sexpr* functionArg = secd->s->car.list;
+    sexpr* list = secd->s->cdr->car.list;
+
+    sexpr* newList = consLL(NULL,NULL);
+    newList->type = LIST;
+    sexpr* newListElem = newList;
+
+    sexpr* listToAppendTo = newList;
+    sexpr* listElem = list->cdr;
+
+    sexpr* oldEnv = functionArg->car.list;
+    sexpr* control = functionArg->cdr;
+
+    while(listElem != NULL){
+        sexpr* newEnv = consLL(listElem->car.list, oldEnv);
+        sexpr* newRoot = consLL(newEnv, functionArg->cdr);
+        newRoot->type = FUNCTION;
+
+        newListElem->cdr = consLL(NULL, NULL);
+        newListElem = newListElem->cdr;
+        newListElem->car.list = newRoot;
+
+        listElem = listElem->cdr;
+    }
+
+    secd->s = consLL(newList, secd->s->cdr->cdr);
+    secd->c = secd->c->cdr;
+
+
 }
 
 struct sexpr *addCDRList(struct sexpr *car, struct sexpr *cadr){
