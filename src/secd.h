@@ -68,7 +68,7 @@ typedef struct sesecd {
 } sesecd;
 
 // execute the programm. should read from the c s-expression and manipulate the secd state accordingly. 
-void execute(struct sesecd *secd);
+void execute();
 // constructs memory objects that can hold integer values or pointers to s-expr. When assiging integer value to cdr it will still be a pointer to an s-expr
 // containing an integer value in its car. L=List, I= Integer. 
 struct sexpr *consLL(struct sexpr *car, struct sexpr *cdr);
@@ -77,7 +77,15 @@ struct sexpr *consLI(struct sexpr *car, int cdr);
 struct sexpr *consII(int car, int cdr);
 
 
+//this sets the maximum space that exists for a page in the garbage collector
+#define MAX_PAGE_SIZE 100
 
+//this is global in order to make garbage collection easier
+sesecd *secd;
+
+//this is a an array of pointer pointers, since the destination of the pointer will be specified
+sexpr **pointersToOverwrite[MAX_PAGE_SIZE];
+int pointerToOverwriteIndex = 0;
 
 /*
 *   The following methods are here to make the creation of s-expressions in secd syntax easier

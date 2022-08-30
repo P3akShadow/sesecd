@@ -204,9 +204,11 @@ int main(void){
     dummy.c = mainFun;
     dummy.d = nilExpr;
 
+    secd = &dummy;
+
     int i = 0;
     while(dummy.c != NULL){
-        execute(&dummy);
+        execute();
         printf("after %d steps:\ns:\n", ++i);
 
         printSexpr(dummy.s);

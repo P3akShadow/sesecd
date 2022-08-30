@@ -36,37 +36,37 @@
 #include <stdio.h>
 #include "secd.h"
 
-void nilInstruction(struct sesecd *secd);
-void ldcInstruction(struct sesecd *secd);
-void ldInstruction(struct sesecd *secd);
-void atomInstruction(struct sesecd *secd);
-void carInstruction(struct sesecd *secd);
-void cdrInstruction(struct sesecd *secd);
-void consInstruction(struct sesecd *secd);
-void addInstruction(struct sesecd *secd);
-void subInstruction(struct sesecd *secd);
-void eqInstruction(struct sesecd *secd);
-void leqInstruction(struct sesecd *secd);
-void leInstruction(struct sesecd *secd);
-void geqInstruction(struct sesecd *secd);
-void geInstruction(struct sesecd *secd);
-void mulInstruction(struct sesecd *secd);
-void divInstruction(struct sesecd *secd);
-void andInstruction(struct sesecd *secd);
-void orInstruction(struct sesecd *secd);
-void selInstruction(struct sesecd *secd);
-void joinInstruction(struct sesecd *secd);
-void ldfInstruction(struct sesecd *secd);
-void apInstruction(struct sesecd *secd);
-void rtnInstruction(struct sesecd *secd);
-void dumInstruction(struct sesecd *secd);
-void rapInstruction(struct sesecd *secd);
-void stopInstruction(struct sesecd *secd);
+void nilInstruction();
+void ldcInstruction();
+void ldInstruction();
+void atomInstruction();
+void carInstruction();
+void cdrInstruction();
+void consInstruction();
+void addInstruction();
+void subInstruction();
+void eqInstruction();
+void leqInstruction();
+void leInstruction();
+void geqInstruction();
+void geInstruction();
+void mulInstruction();
+void divInstruction();
+void andInstruction();
+void orInstruction();
+void selInstruction();
+void joinInstruction();
+void ldfInstruction();
+void apInstruction();
+void rtnInstruction();
+void dumInstruction();
+void rapInstruction();
+void stopInstruction();
 
-void specparInstruction(sesecd *secd);
-void mapInstruction(sesecd *secd);
+void specparInstruction();
+void mapInstruction();
 
-void execute(struct sesecd *secd){
+void execute(){
 
 if(secd->c->car.instruction == 0) {
         printf("Error in S-EXPR structure, no instruction in control register");  
@@ -76,108 +76,175 @@ if(secd->c->car.instruction == 0) {
 switch(secd->c->car.instruction) {
     
     case NIL:
-        nilInstruction(secd);
+        nilInstruction();
         break;
     case LDC:
-        ldcInstruction(secd);
+        ldcInstruction();
         break;
     case LD:
-        ldInstruction(secd);
+        ldInstruction();
         break;
     case ATOM:
-        atomInstruction(secd);
+        atomInstruction();
         break;
     case CAR:
-        carInstruction(secd);
+        carInstruction();
         break;
     case CDR:
-        cdrInstruction(secd);
+        cdrInstruction();
         break;
     case CONS:
-        consInstruction(secd);
+        consInstruction();
         break;
     case ADD:
-        addInstruction(secd);
+        addInstruction();
         break;
     case SUB:
-        subInstruction(secd);
+        subInstruction();
         break;
     case EQ:
-        eqInstruction(secd);
+        eqInstruction();
         break;
     case LEQ:
-        leqInstruction(secd);
+        leqInstruction();
         break;
     case LE:
-        leInstruction(secd);
+        leInstruction();
         break;
     case GEQ:
-        geqInstruction(secd);
+        geqInstruction();
         break;
     case GE:
-        geInstruction(secd);
+        geInstruction();
         break;
     case MUL:
-        mulInstruction(secd);
+        mulInstruction();
         break;
     case DIV:
-        divInstruction(secd);
+        divInstruction();
         break;
     case AND:
-        andInstruction(secd);
+        andInstruction();
         break;
     case OR:
-        orInstruction(secd);
+        orInstruction();
         break;
     case SEL:
-        selInstruction(secd);
+        selInstruction();
         break;
     case JOIN:
-        joinInstruction(secd);
+        joinInstruction();
         break;
     case LDF:
-        ldfInstruction(secd);
+        ldfInstruction();
         break;
     case AP:
-        apInstruction(secd);
+        apInstruction();
         break;
     case RTN:
-        rtnInstruction(secd);
+        rtnInstruction();
         break;
     case DUM:
-        dumInstruction(secd);
+        dumInstruction();
         break;
     case RAP:
-        rapInstruction(secd);
+        rapInstruction();
         break;
     case STOP:
-        stopInstruction(secd);
+        stopInstruction();
         break;
 
     case SPECPAR:
-        specparInstruction(secd);
+        specparInstruction();
         break;
     case MAP:
-        mapInstruction(secd);
+        mapInstruction();
+        break;
     }
 }
 
+sesecd *secd;
+sexpr pages[2][MAX_PAGE_SIZE];
+int pageIndex = 0;
+int indexOnPage = 0;
+sexpr* savedSexprs[MAX_PAGE_SIZE];
+sesecd* secdToSave = NULL;
+
+sexpr *saveSexpr(sexpr* sexprToSave, sexpr* oldPage, sexpr* newPage);
+
+sexpr *mallocSexpr(){
+    printf("allocing sexpr with index %d\n", indexOnPage);
+    sexpr *page = pages[pageIndex];
+    if(indexOnPage++ < MAX_PAGE_SIZE){
+        return &page[indexOnPage];
+    }
+
+    pageIndex = pageIndex + 1 % 2;
+    indexOnPage = 0;
+    
+    sexpr *newPage = pages[pageIndex];
+
+    //in the beginning, no element is saved
+    memset(savedSexprs, 0, sizeof(sexpr*) * MAX_PAGE_SIZE);
+
+    secd->s = saveSexpr(secd->s, page, newPage);
+    secd->e = saveSexpr(secd->e, page, newPage);
+    secd->c = saveSexpr(secd->c, page, newPage);
+    secd->d = saveSexpr(secd->d, page, newPage);
+}
+
+sexpr *saveSexpr(sexpr* sexprToSave, sexpr* oldPage, sexpr* newPage){
+    //to decide whether the car/cdr must be saved, one simply looks up if it points into the old page
+    //there is an error potential, if the value of the expr is inside of the page or the car/cdr are not used but not set to null
+
+    int oldIndex = (sexprToSave - oldPage) / sizeof(sexpr);
+    //this means, the expr has already been saved
+    if(savedSexprs[oldIndex] != NULL){
+        //if already exists, just returns the newLocation, saved at savedSexprs[oldIndex]
+        return savedSexprs[oldIndex];
+    }
+
+    sexpr* newLoc = mallocSexpr();
+
+    memcpy(newLoc, sexprToSave, sizeof(sexpr));
+    savedSexprs[oldIndex] = newLoc;
+
+    int carDiff = (sexprToSave->car.list) - oldPage;
+    if(carDiff > 0 && carDiff < MAX_PAGE_SIZE * sizeof(sexpr) && carDiff % sizeof(sexpr) == 0){
+        newLoc->car.list = saveSexpr(sexprToSave->car.list, oldPage, newPage);
+    } else {
+        newLoc->car = sexprToSave->car;
+    }
+
+    int cdrDiff = (sexprToSave->cdr - oldPage);
+    if(cdrDiff > 0 && cdrDiff < MAX_PAGE_SIZE * sizeof(sexpr) && cdrDiff % sizeof(sexpr) == 0){
+        newLoc->cdr = saveSexpr(sexprToSave->cdr, oldPage, newPage);
+    } else {
+        newLoc->cdr = sexprToSave->cdr;
+    }
+    return newLoc;
+}
+
 struct sexpr *consLL(struct sexpr *car, struct sexpr *cdr){
-    struct sexpr *cons = (struct sexpr*) malloc(sizeof(struct sexpr));
+    //struct sexpr *cons = (struct sexpr*) malloc(sizeof(struct sexpr));
+    sexpr *cons = mallocSexpr();
     cons->car.list = car;
     cons->cdr = cdr;
     return cons;
 }
 
 struct sexpr *consIL(int car, struct sexpr *cdr){
-    struct sexpr *cons = (struct sexpr*) malloc(sizeof(struct sexpr));
+    //struct sexpr *cons = (struct sexpr*) malloc(sizeof(struct sexpr));
+    sexpr *cons = mallocSexpr();
     cons->car.value = car;
     cons->cdr = cdr;
     return cons;
 }
 struct sexpr *consLI(struct sexpr *car, int cdr){
-    struct sexpr *cons = (struct sexpr*) malloc(sizeof(struct sexpr));
-    struct sexpr *consCDR = (struct sexpr*) malloc(sizeof(struct sexpr));
+    //struct sexpr *cons = (struct sexpr*) malloc(sizeof(struct sexpr));
+    //struct sexpr *consCDR = (struct sexpr*) malloc(sizeof(struct sexpr));
+    sexpr *cons = mallocSexpr();
+    sexpr *consCDR = mallocSexpr();
     cons->car.list = car;
     consCDR->car.value = cdr;
     cons->cdr = consCDR;
@@ -185,8 +252,10 @@ struct sexpr *consLI(struct sexpr *car, int cdr){
 }
 
 struct sexpr *consII(int car, int cdr){
-    struct sexpr *cons = (struct sexpr*) malloc(sizeof(struct sexpr));
-    struct sexpr *consCDR = (struct sexpr*) malloc(sizeof(struct sexpr));
+    //struct sexpr *cons = (struct sexpr*) malloc(sizeof(struct sexpr));
+    //struct sexpr *consCDR = (struct sexpr*) malloc(sizeof(struct sexpr));
+    sexpr *cons = mallocSexpr();
+    sexpr *consCDR = mallocSexpr();
     cons->car.value = car;
     consCDR->car.value = cdr;
     cons->cdr = consCDR;
@@ -194,14 +263,15 @@ struct sexpr *consII(int car, int cdr){
 }
 
 
-void nilInstruction(struct sesecd *secd){
-    struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
+void nilInstruction(){
+    //struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
+    sexpr *nil = mallocSexpr();
     nil->car.instruction = NIL;
     secd->s = consLL(nil, NULL);
     secd->c = secd->c->cdr;
 }
 
-void ldcInstruction(struct sesecd *secd){
+void ldcInstruction(){
     secd->s = consLL(secd->c->cdr->car.list, secd->s);
     if(secd->c->cdr->cdr == NULL) {
         printf("Error in S-Expression, no Instructions after LDC.");
@@ -211,7 +281,7 @@ void ldcInstruction(struct sesecd *secd){
 }
 
 // ld(5.3) means that the third element of the fifth list in E is being. The list is in the cadr of c. (cdr->car.)
-void ldInstruction(struct sesecd *secd){
+void ldInstruction(){
 
     fprintf(stderr, "ld 1\n");
 
@@ -241,7 +311,7 @@ void ldInstruction(struct sesecd *secd){
     secd->c = secd->c->cdr->cdr;
 }
 
-void atomInstruction(struct sesecd *secd){
+void atomInstruction(){
 
     if(secd->s->car.list == NULL){
         secd->s = consIL(1, secd->s->cdr);
@@ -251,19 +321,19 @@ void atomInstruction(struct sesecd *secd){
     secd->c = secd->c->cdr;
 }
 
-void carInstruction(struct sesecd *secd){
+void carInstruction(){
 
     secd->s = consIL(secd->s->car.list->car.value, secd->s->cdr);
     secd->c = secd->c->cdr;
 }
 
-void cdrInstruction(struct sesecd *secd){
+void cdrInstruction(){
 
     secd->s = consLL(secd->s->car.list->cdr, secd->s->cdr);
     secd->c = secd->c->cdr;
 }
 
-void consInstruction(struct sesecd *secd){
+void consInstruction(){
 
     struct sexpr *newList;
     if(secd->s->car.list == NULL && secd->s->cdr->car.list == NULL) {
@@ -279,7 +349,7 @@ void consInstruction(struct sesecd *secd){
     secd->c = secd->c->cdr;
 }
 
-void expandRecordOnStack(sesecd *secd){
+void expandRecordOnStack(){
     sexpr* stop = consIL(STOP, secd->c);
     sexpr* ap = consIL(AP, secd->c);
     secd->c = ap;
@@ -289,7 +359,7 @@ void expandRecordOnStack(sesecd *secd){
     secd->s = consLL(pushedFun, env);
 }
 
-void calcTosCdr(sesecd *secd){
+void calcTosCdr(){
      if(secd->s->cdr->car.list->type == FUNCTION){
         sexpr* oldStack = secd->s;
         secd->s = secd->s->cdr;
@@ -297,7 +367,7 @@ void calcTosCdr(sesecd *secd){
         expandRecordOnStack(secd);
         
         for(int i = 0; secd->c->car.instruction != RTN && i < 100; i++){
-            execute(secd);
+            execute();
             printf("after %d steps of final evaluation:\ns:\n", ++i);
     
             printSexpr(secd->s);
@@ -309,17 +379,17 @@ void calcTosCdr(sesecd *secd){
             printSexpr(secd->d);
             printf("\n");
         }
-        execute(secd);
+        execute();
         secd->s = consLL(oldStack->car.list, secd->s);
         return;
     }
 }
 
-void calcTos(sesecd *secd){
+void calcTos(){
     if(secd->s->car.list->type == FUNCTION){
-        expandRecordOnStack(secd);
+        expandRecordOnStack();
         for(int i = 0; secd->c->car.instruction != RTN && i < 100; i++){
-            execute(secd);
+            execute();
             printf("after %d steps of final evaluation:\ns:\n", ++i);
     
             printSexpr(secd->s);
@@ -331,12 +401,12 @@ void calcTos(sesecd *secd){
             printSexpr(secd->d);
             printf("\n");
         }
-        execute(secd);
+        execute();
         return;
     }
 }
 
-void addInstruction(struct sesecd *secd){
+void addInstruction(){
     //these two functions make sure that there are just values on the top of the stack and the next part of the stack
     calcTosCdr(secd);
     calcTos(secd);
@@ -354,7 +424,7 @@ void addInstruction(struct sesecd *secd){
     exit(1);
 }
 
-void subInstruction(struct sesecd *secd){
+void subInstruction(){
     //these two functions make sure that there are just values on the top of the stack and the next part of the stack
     calcTosCdr(secd);
     calcTos(secd);
@@ -372,7 +442,7 @@ void subInstruction(struct sesecd *secd){
     exit(1);
 }
 
-void eqInstruction(struct sesecd *secd){
+void eqInstruction(){
     //these two functions make sure that there are just values on the top of the stack and the next part of the stack
     calcTosCdr(secd);
     calcTos(secd);
@@ -391,7 +461,7 @@ void eqInstruction(struct sesecd *secd){
 }
 
 
-void leqInstruction(struct sesecd *secd){
+void leqInstruction(){
     //these two functions make sure that there are just values on the top of the stack and the next part of the stack
     calcTosCdr(secd);
     calcTos(secd);
@@ -410,7 +480,7 @@ void leqInstruction(struct sesecd *secd){
     exit(1);
 }
 
-void leInstruction(struct sesecd *secd){
+void leInstruction(){
     //these two functions make sure that there are just values on the top of the stack and the next part of the stack
     calcTosCdr(secd);
     calcTos(secd);
@@ -429,7 +499,7 @@ void leInstruction(struct sesecd *secd){
     exit(1);
 }
    
-void geqInstruction(struct sesecd *secd){
+void geqInstruction(){
     //these two functions make sure that there are just values on the top of the stack and the next part of the stack
     calcTosCdr(secd);
     calcTos(secd);
@@ -448,7 +518,7 @@ void geqInstruction(struct sesecd *secd){
     exit(1);
 }
 
-void geInstruction(struct sesecd *secd){
+void geInstruction(){
     //these two functions make sure that there are just values on the top of the stack and the next part of the stack
     calcTosCdr(secd);
     calcTos(secd);
@@ -467,7 +537,7 @@ void geInstruction(struct sesecd *secd){
     exit(1);
 }
 
-void mulInstruction(struct sesecd *secd){
+void mulInstruction(){
     //these two functions make sure that there are just values on the top of the stack and the next part of the stack
     calcTosCdr(secd);
     calcTos(secd);
@@ -485,7 +555,7 @@ void mulInstruction(struct sesecd *secd){
     exit(1);
 }
 
-void divInstruction(struct sesecd *secd){
+void divInstruction(){
     //these two functions make sure that there are just values on the top of the stack and the next part of the stack
     calcTosCdr(secd);
     calcTos(secd);
@@ -503,7 +573,7 @@ void divInstruction(struct sesecd *secd){
     exit(1);
 }
 
-void andInstruction(struct sesecd *secd){
+void andInstruction(){
     //these two functions make sure that there are just values on the top of the stack and the next part of the stack
     calcTosCdr(secd);
     calcTos(secd);
@@ -521,7 +591,7 @@ void andInstruction(struct sesecd *secd){
     exit(1);
 }
 
-void orInstruction(struct sesecd *secd){
+void orInstruction(){
     //these two functions make sure that there are just values on the top of the stack and the next part of the stack
     calcTosCdr(secd);
     calcTos(secd);
@@ -539,7 +609,7 @@ void orInstruction(struct sesecd *secd){
     exit(1);
 }
 
-void selInstruction(struct sesecd *secd){
+void selInstruction(){
 
     secd->d = consLL(secd->c->cdr->cdr->cdr, secd->d);
     if(secd->s->car.list->car.value != 0){
@@ -549,13 +619,13 @@ void selInstruction(struct sesecd *secd){
     secd->s = secd->s->cdr;
 }
 
-void joinInstruction(struct sesecd *secd){
+void joinInstruction(){
 
     secd->c = secd->d->car.list;
     secd->d = secd->d->cdr;
 }
 
-void ldfInstruction(struct sesecd *secd){
+void ldfInstruction(){
     sexpr* funToLoad = secd->c->cdr->car.list;
     sexpr* restOfControl = secd->c->cdr->cdr;
 
@@ -574,7 +644,7 @@ void ldfInstruction(struct sesecd *secd){
     */
 }
 
-void apInstruction(struct sesecd *secd){
+void apInstruction(){
     /*
     sexpr* funToApply = secd->s->car->car;
     sexpr* loadedEnv = secd->s->car->cdr;
@@ -601,7 +671,7 @@ void apInstruction(struct sesecd *secd){
     secd->s = consLL(nil, NULL);
 }
 
-void rtnInstruction(struct sesecd *secd){
+void rtnInstruction(){
 
     if(secd->s->car.list == NULL) {
             secd->s = consIL(secd->s->car.value, secd->d->car.list);
@@ -612,7 +682,7 @@ void rtnInstruction(struct sesecd *secd){
     secd->d = secd->d->cdr->cdr->cdr;
 }
 
-void dumInstruction(struct sesecd *secd){
+void dumInstruction(){
 
     struct sexpr *nil = (struct sexpr*) malloc(sizeof(struct sexpr));
     nil->car.instruction = NIL;
@@ -620,7 +690,7 @@ void dumInstruction(struct sesecd *secd){
     secd->c = secd->c->cdr;
 }
 
-void rapInstruction(struct sesecd *secd){
+void rapInstruction(){
     
     struct sexpr *controlDump;
     struct sexpr *envControlDump;
@@ -635,7 +705,7 @@ void rapInstruction(struct sesecd *secd){
     secd->s = consLL(nil, NULL);
 }
 
-void stopInstruction(struct sesecd *secd) {
+void stopInstruction() {
     printf("stop found\n");
 
     if(secd->s->car.list->type == CONSTANT){
@@ -687,7 +757,7 @@ void stopInstruction(struct sesecd *secd) {
     expandRecordOnStack(secd);
 
     for(int i = 0; i < 100; i++){
-        execute(secd);
+        execute();
         printf("after %d steps of final evaluation:\ns:\n", ++i);
 
         printSexpr(secd->s);
@@ -704,7 +774,7 @@ void stopInstruction(struct sesecd *secd) {
      
 }
 
-void specparInstruction(sesecd *secd) {
+void specparInstruction() {
     printf("specifiying a param\n");
 
     sexpr* oldEnv = secd->s->cdr->car.list->car.list;
@@ -716,7 +786,7 @@ void specparInstruction(sesecd *secd) {
     secd->c = secd->c->cdr;
 }
 
-void mapInstruction(sesecd *secd){
+void mapInstruction(){
     //the list in the cdr can not be a function
     calcTosCdr(secd);
 
@@ -786,7 +856,7 @@ void printSexpr(sexpr* car){
         printf("NULL");
         return;
     }
-    printf("{car:%d", car->car.value);
+    printf("{car:%d (index would be %ld)", car->car.value, car->car.list - pages[pageIndex]);
     if(car->car.value > 1000 || car->car.value < -1000){
         if(car->car.list->type == CONSTANT){printf("(containing con %d)", car->car.list->car.value);}
     }
