@@ -185,6 +185,8 @@ sexpr *mallocSexpr(){
         return &page[indexOnPage++];
     }
 
+    printf("initializing garbage collection\n");
+
     pageIndex = (pageIndex + 1) % 2;
     indexOnPage = 0;
     
@@ -914,8 +916,11 @@ void stopInstruction() {
         int numOfElems = 0;
 
         while(element != NULL && numOfElems < 1000){
+            printf("calculating result of index %d\n", numOfElems);
+            printf("element %d\n", element);
+
             if(element->type == CONSTANT){
-                results[numOfElems++] = element->car.list->car.value;
+                results[numOfElems] = element->car.list->car.value;
             }
 
             else if (element->type == FUNCTION){
@@ -931,6 +936,8 @@ void stopInstruction() {
                 results[numOfElems] = secd->s->car.list->car.value;
                 secd->s = secd->s->cdr;
             }
+            numOfElems++;
+            element = element->cdr;
         }
 
         for(int i = 0; i < numOfElems; i ++){
@@ -1043,7 +1050,7 @@ void mapInstruction(){
     secd->s = consLL(newList, secd->s->cdr->cdr);
     secd->c = secd->c->cdr;
 
-    gcPointerToOverwriteIndex -= 7;
+    gcPointerToOverwriteIndex -= 8;
 
 
     if(pointerAtTheStart != gcPointerToOverwriteIndex){
