@@ -1,6 +1,6 @@
 all: compiler 
 
-compiler: parser.tab.c lex.yy.c secd.c
+compiler: parser.tab.c lex.yy.c secd.c secd.h
 	gcc parser.tab.c lex.yy.c secd.c -o compiler
 
 parser.tab.c: parser.y
