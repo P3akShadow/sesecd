@@ -69,8 +69,8 @@ Program : /*nothing*/ {cleanup();}
 Def : MAIN_TOK DEFINITION_TOK Expr NEWLINE_TOK {genExpr(STOP); mainFun = startExpr;}
     | ID_TOK {registerFun($1,startExpr);} Pars DEFINITION_TOK Expr NEWLINE_TOK {
         genExpr(RTN);
-        printSexpr(startExpr);
-        printf("\n");
+        //printSexpr(startExpr);
+        //printf("\n");
         numOfPars = 0;}
     ;
 
@@ -190,8 +190,8 @@ int main(void){
 
     printf("finished parsing\n");
 
-    printSexpr(mainFun);
-    printf("\n");
+    //printSexpr(mainFun);
+    //printf("\n");
     
     sesecd dummy;
 
@@ -209,16 +209,16 @@ int main(void){
     int i = 0;
     while(dummy.c != NULL){
         execute();
-        printf("after %d steps:\ns:\n", ++i);
+        //printf("after %d steps:\ns:\n", ++i);
 
-        printSexpr(dummy.s);
-        printf("\ne:\n");
-        printSexpr(dummy.e);
-        printf("\nc:\n");
-        printSexpr(dummy.c);
-        printf("\nd:\n");
-        printSexpr(dummy.d);
-        printf("\n");
+        //printSexpr(dummy.s);
+        //printf("\ne:\n");
+        //printSexpr(dummy.e);
+        //printf("\nc:\n");
+        //printSexpr(dummy.c);
+        //printf("\nd:\n");
+        //printSexpr(dummy.d);
+        //printf("\n");
     }
 
     return 0;
@@ -244,7 +244,7 @@ void registerFun(char* name, sexpr* fun){
     root->car.list = env;
     root->cdr = fun;
 
-    printf("written fun %s on root %d\n", name, root);
+    //printf("written fun %s on root %d\n", name, root);
     
     definedFunctions[numOfFunctions++] = root;
 }

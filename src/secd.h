@@ -80,6 +80,9 @@ struct sexpr *consII(int car, int cdr);
 //this sets the maximum space that exists for a page in the garbage collector
 #define MAX_PAGE_SIZE 1000
 
+//the number of times the garbage collector ran
+int gcConducted;
+
 //this is global in order to make garbage collection easier
 sesecd *secd;
 

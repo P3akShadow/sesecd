@@ -80,6 +80,8 @@ sesecd* secdToSave = NULL;
 sexpr **pointersToOverwrite[MAX_PAGE_SIZE];
 int gcPointerToOverwriteIndex = 0;
 
+int gcConducted = 0;
+
 void execute(){
 
 if(secd->c->car.instruction == 0) {
@@ -185,7 +187,8 @@ sexpr *mallocSexpr(){
         return &page[indexOnPage++];
     }
 
-    printf("initializing garbage collection\n");
+    //printf("initializing garbage collection\n");
+    gcConducted++;
 
     pageIndex = (pageIndex + 1) % 2;
     indexOnPage = 0;
@@ -195,13 +198,13 @@ sexpr *mallocSexpr(){
     //in the beginning, no element is saved
     memset(savedSexprs, 0, sizeof(sexpr*) * MAX_PAGE_SIZE);
 
-    printf("saving s\n");
+    //printf("saving s\n");
     secd->s = saveSexpr(secd->s, page, newPage);
-    printf("saving e\n");
+    //printf("saving e\n");
     secd->e = saveSexpr(secd->e, page, newPage);
-    printf("saving c\n");
+    //printf("saving c\n");
     secd->c = saveSexpr(secd->c, page, newPage);
-    printf("saving d(%d)\n", secd->d);
+    //printf("saving d(%d)\n", secd->d);
     secd->d = saveSexpr(secd->d, page, newPage);
 
 
@@ -290,7 +293,6 @@ struct sexpr *consLI(struct sexpr *car, int cdr){
     if(car != NULL){
         pointersToOverwrite[gcPointerToOverwriteIndex++] = &car;
     }
-    pointersToOverwrite[gcPointerToOverwriteIndex++] = &cdr;
     //struct sexpr *cons = (struct sexpr*) malloc(sizeof(struct sexpr));
     //struct sexpr *consCDR = (struct sexpr*) malloc(sizeof(struct sexpr));
     sexpr *cons = mallocSexpr();
@@ -432,16 +434,16 @@ void calcTosCdr(){
         
         for(int i = 0; secd->c->car.instruction != RTN; i++){
             execute();
-            printf("after %d steps of final evaluation:\ns:\n", ++i);
+            //printf("after %d steps of final evaluation:\ns:\n", ++i);
     
-            printSexpr(secd->s);
-            printf("\ne:\n");
-            printSexpr(secd->e);
-            printf("\nc:\n");
-            printSexpr(secd->c);
-            printf("\nd:\n");
-            printSexpr(secd->d);
-            printf("\n");
+            //printSexpr(secd->s);
+            //printf("\ne:\n");
+            //printSexpr(secd->e);
+            //printf("\nc:\n");
+            //printSexpr(secd->c);
+            //printf("\nd:\n");
+            //printSexpr(secd->d);
+            //printf("\n");
         }
         execute();
 
@@ -461,20 +463,18 @@ void calcTos(){
         expandRecordOnStack();
         for(int i = 0; secd->c->car.instruction != RTN && i < 100; i++){
             execute();
-            printf("after %d steps of final evaluation:\ns:\n", ++i);
+            //printf("after %d steps of final evaluation:\ns:\n", ++i);
     
-            printSexpr(secd->s);
-            printf("\ne:\n");
-            printSexpr(secd->e);
-            printf("\nc:\n");
-            printSexpr(secd->c);
-            printf("\nd:\n");
-            printSexpr(secd->d);
-            printf("\n");
+            //printSexpr(secd->s);
+            //printf("\ne:\n");
+            //printSexpr(secd->e);
+            //printf("\nc:\n");
+            //printSexpr(secd->c);
+            //printf("\nd:\n");
+            //printSexpr(secd->d);
+            //printf("\n");
         }
         execute();
-        printf("calcTos finsished\n");
-        fflush(stdout);
         return;
     }
 }
@@ -805,8 +805,8 @@ void ldfInstruction(){
 
     sexpr* pushedFun = consLL(funToLoad, secd->e);
 
-    printSexpr(pushedFun);
-    printf("\n");
+    //printSexpr(pushedFun);
+    //printf("\n");
 
     pointersToOverwrite[gcPointerToOverwriteIndex++] = &pushedFun;
     secd->s = consLL(pushedFun, secd->s);
@@ -866,9 +866,6 @@ void rtnInstruction(){
     secd->s = consLL(secd->s->car.list, secd->d->car.list);
 
 
-    printf("cons finished\n");
-    fflush(stdout);
-
     secd->e = secd->d->cdr->car.list;
     secd->c = secd->d->cdr->cdr->car.list;
     secd->d = secd->d->cdr->cdr->cdr;
@@ -902,6 +899,7 @@ void stopInstruction() {
 
     if(secd->s->car.list->type == CONSTANT){
         printf("Result: %d\n", secd->s->car.list->car.value);
+        printf("total times garbage has been collected %d\n", gcConducted);
         exit(0);
     }
 
@@ -910,14 +908,12 @@ void stopInstruction() {
 
         sexpr* element = secd->s->car.list->cdr;
         pointersToOverwrite[gcPointerToOverwriteIndex++] = &element;
-        printf("registered pointer to %d at index %d\n", &element, gcPointerToOverwriteIndex - 1);
 
         int results[1000];
         int numOfElems = 0;
 
         while(element != NULL && numOfElems < 1000){
             printf("calculating result of index %d\n", numOfElems);
-            printf("element %d\n", element);
 
             if(element->type == CONSTANT){
                 results[numOfElems] = element->car.list->car.value;
@@ -947,43 +943,42 @@ void stopInstruction() {
         printf("\n");
         gcPointerToOverwriteIndex--;
 
+        printf("total times garbage has been collected %d\n", gcConducted);
         exit(0);
     }
 
-    printf("Still a function on stack!\nExpanding to show a number\n");
+    printf("Still a function on stack!\nExpanding to show a concrete value\n");
     expandRecordOnStack(secd);
 
-    for(int i = 0; i < 100; i++){
+    for(int i = 0; ; i++){
         execute();
-        printf("after %d steps of final evaluation:\ns:\n", ++i);
+        //printf("after %d steps of final evaluation:\ns:\n", ++i);
 
-        printSexpr(secd->s);
-        printf("\ne:\n");
-        printSexpr(secd->e);
-        printf("\nc:\n");
-        printSexpr(secd->c);
-        printf("\nd:\n");
-        printSexpr(secd->d);
-        printf("\n");
+        //printSexpr(secd->s);
+        //printf("\ne:\n");
+        //printSexpr(secd->e);
+        //printf("\nc:\n");
+        //printSexpr(secd->c);
+        //printf("\nd:\n");
+        //printSexpr(secd->d);
+        //printf("\n");
     }
- 
+
+    printf("total times garbage has been collected %d\n", gcConducted);
     exit(0);
-     
 }
 
 void specparInstruction() {
     int pointerAtTheStart = gcPointerToOverwriteIndex;
-    printf("specifiying a param\n");
+    //printf("specifiying a param\n");
 
     sexpr* oldEnv = secd->s->cdr->car.list->car.list;
     //loads from stack in order to be able to digest values that have already been passed as params
     sexpr* newEnv = consLL(secd->s->car.list, oldEnv);
     pointersToOverwrite[gcPointerToOverwriteIndex++] = &newEnv;
-    printf("registered pointer to %d at index %d\n", &newEnv, gcPointerToOverwriteIndex - 1);
     sexpr* newRoot = consLL(newEnv, secd->s->cdr->car.list->cdr);
     newRoot->type = FUNCTION;
     pointersToOverwrite[gcPointerToOverwriteIndex++] = &newRoot;
-    printf("registered pointer to %d at index %d\n", &newRoot, gcPointerToOverwriteIndex - 1);
     secd->s = consLL(newRoot, secd->s->cdr->cdr);
     gcPointerToOverwriteIndex -= 2;
     secd->c = secd->c->cdr;
@@ -1006,37 +1001,29 @@ void mapInstruction(){
     sexpr* list = secd->s->cdr->car.list;
 
     pointersToOverwrite[gcPointerToOverwriteIndex++] = &functionArg;
-    printf("registered pointer to %d at index %d\n", &functionArg, gcPointerToOverwriteIndex - 1);
     pointersToOverwrite[gcPointerToOverwriteIndex++] = &list;
-    printf("registered pointer to %d at index %d\n", &list, gcPointerToOverwriteIndex - 1);
 
     sexpr* newList = consLL(NULL,NULL);
     newList->type = LIST;
     sexpr* newListElem = newList;
     pointersToOverwrite[gcPointerToOverwriteIndex++] = &newList;
-    printf("registered pointer to %d at index %d\n", &newList, gcPointerToOverwriteIndex - 1);
     pointersToOverwrite[gcPointerToOverwriteIndex++] = &newListElem;
-    printf("registered pointer to %d at index %d\n", &newListElem, gcPointerToOverwriteIndex - 1);
 
     sexpr* listElem = list->cdr;
 
     sexpr* oldEnv = functionArg->car.list;
     pointersToOverwrite[gcPointerToOverwriteIndex++] = &oldEnv;
-    printf("registered pointer to %d at index %d\n", &oldEnv, gcPointerToOverwriteIndex - 1);
 
     gcPointerToOverwriteIndex += 3;
 
     while(listElem != NULL){
         pointersToOverwrite[gcPointerToOverwriteIndex - 3] = &listElem;
-        printf("registered pointer to %d at index %d\n", &listElem, gcPointerToOverwriteIndex - 3);
 
         sexpr* newEnv = consLL(listElem->car.list, oldEnv);
         pointersToOverwrite[gcPointerToOverwriteIndex - 2] = &newEnv;
-        printf("registered pointer to %d at index %d\n", &newEnv, gcPointerToOverwriteIndex - 2);
         sexpr* newRoot = consLL(newEnv, functionArg->cdr);
 
         pointersToOverwrite[gcPointerToOverwriteIndex - 1] = &newRoot;
-        printf("registered pointer to %d at index %d\n", &newRoot, gcPointerToOverwriteIndex - 1);
 
         newRoot->type = FUNCTION;
 
@@ -1089,7 +1076,7 @@ struct sexpr *createSexpr(){
     return car;
 }
 
-
+/*
 void printSexpr(sexpr* car){
     if(car == NULL) {
         printf("NULL");
@@ -1126,3 +1113,4 @@ void printSexprIndent(sexpr* sexprToPrint, int indent){
     }
     printf("%*s}\n", indent, "");
 }
+*/
