@@ -900,6 +900,8 @@ void stopInstruction() {
     if(secd->s->car.list->type == CONSTANT){
         printf("Result: %d\n", secd->s->car.list->car.value);
         printf("total times garbage has been collected %d\n", gcConducted);
+        double elapsed_time = (double) (clock() - start_time) / CLOCKS_PER_SEC;
+        printf("Evaluation took %f seconds\n", elapsed_time);
         exit(0);
     }
 
@@ -944,6 +946,8 @@ void stopInstruction() {
         gcPointerToOverwriteIndex--;
 
         printf("total times garbage has been collected %d\n", gcConducted);
+        double elapsed_time = (double) (clock() - start_time) / CLOCKS_PER_SEC;
+        printf("Evaluation took %f seconds\n", elapsed_time);
         exit(0);
     }
 
@@ -965,6 +969,8 @@ void stopInstruction() {
     }
 
     printf("total times garbage has been collected %d\n", gcConducted);
+    double elapsed_time = (double) (clock() - start_time) / CLOCKS_PER_SEC;
+    printf("Evaluation took %f seconds\n", elapsed_time);
     exit(0);
 }
 

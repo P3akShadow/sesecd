@@ -4,6 +4,7 @@
 #include <string.h>
 #include "secd.h"
 
+
 #define MAX_FUN 1000
 #define MAX_PARAMS 100
 
@@ -206,6 +207,7 @@ int main(void){
 
     secd = &dummy;
 
+    start_time = clock();
     int i = 0;
     while(dummy.c != NULL){
         execute();

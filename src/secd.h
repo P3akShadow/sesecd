@@ -1,5 +1,7 @@
 #ifndef SECD_H
 #define SECD_H
+#include <time.h>
+
 
 // instruction set of the sesecd
 typedef enum instruction{
@@ -78,10 +80,13 @@ struct sexpr *consII(int car, int cdr);
 
 
 //this sets the maximum space that exists for a page in the garbage collector
-#define MAX_PAGE_SIZE 1000
+#define MAX_PAGE_SIZE 1000000
 
 //the number of times the garbage collector ran
 int gcConducted;
+
+//the time when the vm started running
+clock_t start_time;
 
 //this is global in order to make garbage collection easier
 sesecd *secd;
